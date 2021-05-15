@@ -1,0 +1,31 @@
+{
+  "overrides": [
+    {
+      "files": [
+        "*.sol",
+        "*.js",
+        "*.ts"
+      ],
+      "options": {
+        "printWidth": 200,
+        "tabWidth": 4,
+        "useTabs": false,
+        "bracketSpacing": false,
+        "semi": true,
+        "explicitTypes": "always"
+      }
+    },
+    {
+      "files": "*.js",
+      "options": {
+        "singleQuote": true
+      }
+    },
+    {
+      "files": ".prettierrc",
+      "options": {
+        "parser": "json"
+      }
+    }
+  ]
+}
