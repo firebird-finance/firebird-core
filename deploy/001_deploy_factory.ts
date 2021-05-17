@@ -56,6 +56,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 	await execute("ProtocolFeeRemover", {from: deployer, log: true}, "setReceiver", governance);
 	await execute("ProtocolFeeRemover", {from: deployer, log: true}, "setGovernance", governance);
 
+	const zapper = await deploy("ValueLiquidZap", {
+		contract: "ValueLiquidZap",
+		skipIfAlreadyDeployed: true,
+		from: deployer,
+		args: [],
+		log: true,
+	});
+
+	if (zapper.newlyDeployed) {
+		await execute("ValueLiquidZap", {from: deployer, log: true}, "setVSwapFactory", factoty.address);
+		await execute("ValueLiquidZap", {from: deployer, log: true}, "setVSwapRouter", router.address);
+		await execute("ValueLiquidZap", {from: deployer, log: true}, "setVSwapFormula", formula.address);
+		await execute("ValueLiquidZap", {from: deployer, log: true}, "setWBNB", wethAddress);
+	}
 };
 
 export async function getWeth(hre: HardhatRuntimeEnvironment) {
