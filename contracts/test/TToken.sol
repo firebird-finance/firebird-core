@@ -47,12 +47,13 @@ contract TToken {
     constructor(
         string memory name,
         string memory symbol,
-        uint8 decimals
+        uint256 amt
     ) public {
         _name = name;
         _symbol = symbol;
-        _decimals = decimals;
+        _decimals = 18;
         _owner = msg.sender;
+        _mint(msg.sender, amt);
     }
 
     function name() public view returns (string memory) {

@@ -66,6 +66,7 @@ export async function getWeth(hre: HardhatRuntimeEnvironment) {
 		const wethContract = await deploy("WETH", {
 			contract: "WETH9",
 			from: deployer,
+			skipIfAlreadyDeployed: true,
 			args: [],
 			log: true,
 		});

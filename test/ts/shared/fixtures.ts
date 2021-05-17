@@ -12,7 +12,17 @@ import {
 	FireBirdRouterFactory,
 	Weth9Factory,
 	FireBirdRouter,
-	Weth9, RouterEventEmitter,
+	Weth9,
+	RouterEventEmitter,
+	TToken,
+	StakePoolCreator,
+	StakePoolEpochRewardCreator,
+	StakePoolController,
+	FireBirdFactoryMock,
+	TTokenFactory,
+	StakePoolCreatorFactory,
+	StakePoolEpochRewardCreatorFactory,
+	StakePoolControllerFactory, FireBirdFactoryMockFactory,
 } from "../../../typechain";
 import {
 	getAddress,
@@ -22,11 +32,7 @@ import {SignerWithAddress} from "hardhat-deploy-ethers/dist/src/signer-with-addr
 import {toWei} from "./utilities";
 import {Contract} from "ethers";
 import {deployments} from 'hardhat';
-import {deployContractWithLibraries} from "./common";
-// @ts-ignore
-import SwapUtilsArtifact from "../../../artifacts/contracts/stableSwap/SwapUtils.sol/SwapUtils.json";
-// @ts-ignore
-import SwapCreatorArtifact from "../../../artifacts/contracts/stableSwap/SwapCreator.sol/SwapCreator.json";
+
 
 interface FormulaFixture {
 	formula: FireBirdFormula
@@ -187,3 +193,30 @@ export async function v2Fixture(signer: SignerWithAddress, samePairWeight: boole
 	})()
 
 }
+
+interface StakePoolFixture {
+	stakeToken: TToken,
+	stakePoolCreator: StakePoolCreator,
+	stakePoolEpochRewardCreator: StakePoolEpochRewardCreator,
+	stakePoolController: StakePoolController,
+	fireBirdFactoryMock: FireBirdFactoryMock,
+}
+
+export async function stakePoolFixture(signer: SignerWithAddress): Promise<StakePoolFixture> {
+	return await deployments.createFixture(async () => {
+		const stakeToken = await new TTokenFactory(signer).deploy("Test", "TEST", toWei(100000));
+		const stakePoolCreator = await new StakePoolCreatorFactory(signer).deploy();
+		const stakePoolEpochRewardCreator = await new StakePoolEpochRewardCreatorFactory(signer).deploy();
+		const stakePoolController = await new StakePoolControllerFactory(signer).deploy();
+		const fireBirdFactoryMock = await new FireBirdFactoryMockFactory(signer).deploy();
+		await stakePoolController.initialize(fireBirdFactoryMock.address);
+		return {
+			stakeToken,
+			stakePoolCreator,
+			stakePoolEpochRewardCreator,
+			stakePoolController,
+			fireBirdFactoryMock,
+		}
+	})()
+}
+

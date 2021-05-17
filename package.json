@@ -62,7 +62,8 @@
         "ethereumjs-util": "^6.2.0"
     },
     "dependencies": {
-        "@openzeppelin/contracts": "^3.2.0",
-        "@openzeppelin/contracts-ethereum-package": "^3.0.0"
+        "@openzeppelin/contracts": "^3.4.1",
+        "@openzeppelin/contracts-ethereum-package": "^3.0.0",
+        "@openzeppelin/upgrades": "^2.8.0"
     }
 }

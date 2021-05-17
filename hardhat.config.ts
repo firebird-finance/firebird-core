@@ -22,7 +22,6 @@ const config: HardhatUserConfig = {
     namedAccounts: {
         deployer: 0,
         bob: 1,
-        proxyAdmin: 4,
         weth: {
             bsctestnet: '0xae13d989dac2f0debff460ac112a837c89baa7cd',
             bsc: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
@@ -32,6 +31,12 @@ const config: HardhatUserConfig = {
             local: 1,
             bsc: '0xA20CA7c6705fB88847Cbf50549D7A38f4e99d32c',
             bsctestnet: 1,
+        },
+        proxyAdmin: {
+            hardhat: 2,
+            local: 2,
+            bsc: '0x6C844B76d8984a7703Ac4AA211a6507E088D8169',
+            bsctestnet: 2,
         },
     },
     etherscan: {
@@ -131,7 +136,11 @@ const config: HardhatUserConfig = {
         cache: './cache',
         artifacts: './artifacts',
     },
-    external: {},
+    external: {
+        contracts: [{
+            artifacts : "node_modules/@openzeppelin/upgrades/build/contracts"
+        }]
+    },
     mocha: {
         timeout: 200000
     },
