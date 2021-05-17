@@ -25,7 +25,14 @@ const config: HardhatUserConfig = {
         proxyAdmin: 4,
         weth: {
             bsctestnet: '0xae13d989dac2f0debff460ac112a837c89baa7cd',
-        }
+            bsc: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+        },
+        governance: {
+            hardhat: 1,
+            local: 1,
+            bsc: '0xA20CA7c6705fB88847Cbf50549D7A38f4e99d32c',
+            bsctestnet: 1,
+        },
     },
     etherscan: {
         apiKey: ETHERSCAN_API_KEY,
