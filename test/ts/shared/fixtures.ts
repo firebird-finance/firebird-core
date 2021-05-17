@@ -22,7 +22,13 @@ import {
 	TTokenFactory,
 	StakePoolCreatorFactory,
 	StakePoolEpochRewardCreatorFactory,
-	StakePoolControllerFactory, FireBirdFactoryMockFactory,
+	StakePoolControllerFactory,
+	FireBirdFactoryMockFactory,
+	LpTokenFactory,
+	SwapFactory,
+	SwapUtils,
+	MathUtilsFactory,
+	StableSwapRouterFactory, SwapCreator, StableSwapFactory, LpToken, StableSwapRouter, Swap, StableSwapFactoryFactory,
 } from "../../../typechain";
 import {
 	getAddress,
@@ -32,7 +38,11 @@ import {SignerWithAddress} from "hardhat-deploy-ethers/dist/src/signer-with-addr
 import {toWei} from "./utilities";
 import {Contract} from "ethers";
 import {deployments} from 'hardhat';
-
+import {deployContractWithLibraries} from "./common";
+// @ts-ignore
+import SwapUtilsArtifact from "../../../artifacts/contracts/stableSwap/SwapUtils.sol/SwapUtils.json";
+// @ts-ignore
+import SwapCreatorArtifact from "../../../artifacts/contracts/stableSwap/SwapCreator.sol/SwapCreator.json";
 
 interface FormulaFixture {
 	formula: FireBirdFormula
@@ -220,3 +230,95 @@ export async function stakePoolFixture(signer: SignerWithAddress): Promise<Stake
 	})()
 }
 
+interface StableFixture {
+	firstToken: Contract,
+	secondToken: Contract,
+	thirdToken: Contract,
+	stableFactory: StableSwapFactory,
+	swapToken: LpToken,
+	linkSwapToken: LpToken,
+	stableSwapRouter: StableSwapRouter,
+	swap: Swap,
+	linkSwap: Swap,
+}
+
+export async function stableFixture (signer: SignerWithAddress): Promise<StableFixture> {
+	return await deployments.createFixture(async () => {
+		// Deploy dummy tokens
+		const firstToken = await new TestErc20Factory(signer).deploy(toWei(10000));
+		const secondToken = await new TestErc20Factory(signer).deploy(toWei(10000));
+		const thirdToken = await new TestErc20Factory(signer).deploy(toWei(10000));
+		const stableSwapRouter = await new StableSwapRouterFactory(signer).deploy();
+
+		// Deploy MathUtils
+		const mathUtils = await new MathUtilsFactory(signer).deploy();
+
+		// Deploy SwapUtils with MathUtils library
+		const swapUtils = (await deployContractWithLibraries(signer, SwapUtilsArtifact, {
+			MathUtils: mathUtils.address,
+		})) as SwapUtils;
+		await swapUtils.deployed();
+
+		// Deploy Creator with SwapUtils library
+		const stableCreator = (await deployContractWithLibraries(
+			signer,
+			SwapCreatorArtifact,
+			{ SwapUtils: swapUtils.address },
+			[],
+		)) as SwapCreator;
+
+		// Deploy Factory
+		const stableFactory = await new StableSwapFactoryFactory(signer).deploy();
+		await stableFactory.initialize(signer.address, stableCreator.address);
+
+		const tx = await stableFactory.createPool(
+			[firstToken.address, secondToken.address],
+			[18, 18],
+			"Saddle Stable1/Stable2",
+			"saddleStable",
+			200,
+			1e8, // 1%
+			5e9, // 50%
+			5e7, // 0.5%
+			24 * 3600,
+		);
+		const receipt = await tx.wait();
+		const swapAddress = getAddress(receipt.logs[3].topics[1].slice(26)) ?? null;
+		const swap = SwapFactory.connect(swapAddress, signer);
+
+		const swapStorage = await swap.swapStorage();
+		const swapToken = LpTokenFactory.connect(swapStorage.lpToken, signer);
+
+
+		const linkTx = await stableFactory.createPool(
+			[swapToken.address, thirdToken.address],
+			[18, 18],
+			"Link Saddle swapToken/thirdToken",
+			"linkSaddleStable",
+			200,
+			1e8, // 1%
+			5e9, // 50%
+			5e7, // 0.5%
+			24 * 3600,
+		);
+		const linkReceipt = await linkTx.wait();
+		const linkSwapAddress = getAddress(linkReceipt.logs[3].topics[1].slice(26)) ?? null;
+		const linkSwap = SwapFactory.connect(linkSwapAddress, signer);
+
+		const linkSwapStorage = await linkSwap.swapStorage();
+		const linkSwapToken = LpTokenFactory.connect(linkSwapStorage.lpToken, signer);
+
+		return {
+			firstToken,
+			secondToken,
+			thirdToken,
+			stableFactory,
+			swapToken,
+			stableSwapRouter,
+			swap,
+			linkSwap,
+			linkSwapToken,
+
+		}
+	})()
+}

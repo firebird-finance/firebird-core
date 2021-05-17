@@ -42,10 +42,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 			fireBirdFactory.address
 		)
 
-		// await execute("StakePoolController", {from: deployer, log: true}, "setFeeCollector", protocolFeeRemover.address);
-		// await execute("StakePoolController", {from: deployer, log: true}, "setFeeToken", wethAddress);
-		// await execute("StakePoolController", {from: deployer, log: true}, "setFeeAmount", expandDecimals(1, 18));
-		// await execute("StakePoolController", {from: deployer, log: true}, "setExtraFeeRate", 5000);
+		await execute("StakePoolController", {from: deployer, log: true}, "setFeeCollector", protocolFeeRemover.address);
+		await execute("StakePoolController", {from: deployer, log: true}, "setFeeToken", wethAddress);
+		await execute("StakePoolController", {from: deployer, log: true}, "setFeeAmount", expandDecimals(10, 18));
+		await execute("StakePoolController", {from: deployer, log: true}, "setExtraFeeRate", 5000);
 	}
 	const stakePoolCreator = await deploy("StakePoolCreator", {
 		contract: "StakePoolCreator",
