@@ -6,7 +6,7 @@ import {BigNumber} from "ethers";
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 	const {deployments, getNamedAccounts} = hre;
 	const {deploy, execute} = deployments;
-	const {deployer, governance} = await getNamedAccounts();
+	const {deployer, governance, uniRouter} = await getNamedAccounts();
 
 	const wethAddress = await getWeth(hre);
 
@@ -34,14 +34,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 		log: true,
 	});
 
-	if (factoty.newlyDeployed || protocolFeeRemover.newlyDeployed) {
-		await execute("FireBirdFactory", {from: deployer, log: true}, "setFeeTo", protocolFeeRemover.address);
-	}
-
-	if (factoty.newlyDeployed) {
-		await execute("FireBirdFactory", {from: deployer, log: true}, "setProtocolFee", BigNumber.from(20000));
-	}
-
 
 	const router = await deploy("FireBirdRouter", {
 		contract: "FireBirdRouter",
@@ -50,26 +42,27 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 		args: [factoty.address, wethAddress],
 		log: true,
 	});
-
-
-	await execute("FireBirdFactory", {from: deployer, log: true}, "setFeeToSetter", governance);
-	await execute("ProtocolFeeRemover", {from: deployer, log: true}, "setReceiver", governance);
-	await execute("ProtocolFeeRemover", {from: deployer, log: true}, "setGovernance", governance);
-
-	const zapper = await deploy("ValueLiquidZap", {
-		contract: "ValueLiquidZap",
+	const zapper = await deploy("FireBirdZap", {
+		contract: "FireBirdZap",
 		skipIfAlreadyDeployed: true,
 		from: deployer,
-		args: [],
+		args: [uniRouter, router.address],
 		log: true,
 	});
 
-	if (zapper.newlyDeployed) {
-		await execute("ValueLiquidZap", {from: deployer, log: true}, "setVSwapFactory", factoty.address);
-		await execute("ValueLiquidZap", {from: deployer, log: true}, "setVSwapRouter", router.address);
-		await execute("ValueLiquidZap", {from: deployer, log: true}, "setVSwapFormula", formula.address);
-		await execute("ValueLiquidZap", {from: deployer, log: true}, "setWBNB", wethAddress);
+	if (factoty.newlyDeployed || protocolFeeRemover.newlyDeployed) {
+		await execute("FireBirdFactory", {from: deployer, log: true}, "setFeeTo", protocolFeeRemover.address);
 	}
+
+	if (factoty.newlyDeployed) {
+		await execute("FireBirdFactory", {from: deployer, log: true}, "setProtocolFee", BigNumber.from(20000));
+	}
+	await execute("FireBirdFactory", {from: deployer, log: true}, "setFeeToSetter", governance);
+	await execute("ProtocolFeeRemover", {from: deployer, log: true}, "setReceiver", governance);
+	await execute("ProtocolFeeRemover", {from: deployer, log: true}, "setGovernance", governance);
+	await execute("FireBirdZap", {from: deployer, log: true}, "setGovernance", governance);
+
+
 };
 
 export async function getWeth(hre: HardhatRuntimeEnvironment) {

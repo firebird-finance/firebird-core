@@ -18,13 +18,13 @@ contract FireBirdZap is ReentrancyGuard {
 
     // governance
     address public governance;
-    address public WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    address public WBNB;
     address private constant BNB_ADDRESS = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
 
-    IUniswapV2Router public uniRouter = IUniswapV2Router(0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F);
-    IFireBirdRouter public fireBirdRouter = IFireBirdRouter(0xb7e19a1188776f32E8C2B790D9ca578F2896Da7C);
-    IFireBirdFactory public fireBirdFactory = IFireBirdFactory(0x1B8E12F839BD4e73A47adDF76cF7F0097d74c14C);
-    IFireBirdFormula public fireBirdFormula = IFireBirdFormula(0x45f24BaEef268BB6d63AEe5129015d69702BCDfa);
+    IUniswapV2Router public uniRouter;
+    IFireBirdRouter public fireBirdRouter;
+    IFireBirdFactory public fireBirdFactory;
+    IFireBirdFormula public fireBirdFormula;
 
     mapping(address => mapping(address => address[])) public fireBirdPairs; // [input -> output] => fireBird pair
     uint public maxResidual = 100; // 1%, set 10000 to disable
@@ -43,8 +43,13 @@ contract FireBirdZap is ReentrancyGuard {
         _;
     }
 
-    constructor() public {
+    constructor(IUniswapV2Router _uniRouter, IFireBirdRouter _fireBirdRouter) public {
         governance = msg.sender;
+        uniRouter = _uniRouter;
+        fireBirdRouter = _fireBirdRouter;
+        fireBirdFactory = IFireBirdFactory(_fireBirdRouter.factory());
+        fireBirdFormula = IFireBirdFormula(_fireBirdRouter.formula());
+        WBNB = _fireBirdRouter.WETH();
     }
 
     /* ========== External Functions ========== */
@@ -232,7 +237,7 @@ contract FireBirdZap is ReentrancyGuard {
     // return amountToConverted _toToken that will be converted from other
     // return amountToOrigin _toToken that will be removed from pair
     function getAmountToZapOut(address _from, uint amount, address _toToken) external view
-        returns (uint256 amountOtherSell, uint256 amountToConverted, uint256 amountToOrigin) {
+    returns (uint256 amountOtherSell, uint256 amountToConverted, uint256 amountToOrigin) {
         address other;
         {
             IFireBirdPair pair = IFireBirdPair(_from);
@@ -240,7 +245,8 @@ contract FireBirdZap is ReentrancyGuard {
             address token1 = pair.token1();
             other = _toToken == token0 ? token1 : token0;
         }
-        uint sellAmount; uint amountToRemoved;
+        uint sellAmount;
+        uint amountToRemoved;
         {
             uint _totalSupply = IERC20(_from).totalSupply();
             sellAmount = amount.mul(IERC20(other).balanceOf(_from)) / _totalSupply;
@@ -255,11 +261,11 @@ contract FireBirdZap is ReentrancyGuard {
         (uint32 tokenWeight0, uint32 tokenWeight1,) = fireBirdFactory.getWeightsAndSwapFee(pair);
 
         if (tokenWeight0 == 50) {
-            (uint256 res0, uint256 res1, ) = IFireBirdPair(pair).getReserves();
+            (uint256 res0, uint256 res1,) = IFireBirdPair(pair).getReserves();
             uint reserveIn = tokenIn == pairToken0 ? res0 : res1;
             return Babylonian
-                .sqrt(reserveIn.mul(userIn.mul(3988000) + reserveIn.mul(3988009)))
-                .sub(reserveIn.mul(1997)) / 1994;
+            .sqrt(reserveIn.mul(userIn.mul(3988000) + reserveIn.mul(3988009)))
+            .sub(reserveIn.mul(1997)) / 1994;
         } else {
             uint256 otherWeight = tokenIn == pairToken0 ? uint(tokenWeight1) : uint(tokenWeight0);
             return userIn.mul(otherWeight).div(100);
@@ -269,7 +275,7 @@ contract FireBirdZap is ReentrancyGuard {
     /* ========== Private Functions ========== */
     function _getRemovedReserveAmountOut(address pair, address tokenIn, uint sellAmount, uint amountToRemoved) internal view returns (uint) {
         (, uint reserveIn, uint reserveOut, uint32 tokenWeightIn, uint32 tokenWeightOut, uint32 swapFee) =
-            fireBirdFormula.getFactoryReserveAndWeights(address(fireBirdFactory), pair, tokenIn);
+        fireBirdFormula.getFactoryReserveAndWeights(address(fireBirdFactory), pair, tokenIn);
         return fireBirdFormula.getAmountOut(sellAmount, reserveIn.sub(sellAmount), reserveOut.sub(amountToRemoved), tokenWeightIn, tokenWeightOut, swapFee);
     }
 
@@ -338,7 +344,7 @@ contract FireBirdZap is ReentrancyGuard {
             require(tokenAmount >= _minTokenB, "Zap: Insufficient Receive Amount");
 
             uint256 wbnbAmount = amount.sub(swapValue);
-            IWETH(WBNB).deposit{value: wbnbAmount}();
+            IWETH(WBNB).deposit{value : wbnbAmount}();
             lpAmt = _pairDeposit(lp, WBNB, token, wbnbAmount, tokenAmount, receiver, fireBirdFactory.isPair(lp), transferResidual);
         } else {
             address token0 = pair.token0();
@@ -358,7 +364,7 @@ contract FireBirdZap is ReentrancyGuard {
 
     function _swapBNBForToken(address token, uint value, address _receiver, address lpBNBToken) private returns (uint) {
         if (token == WBNB) {
-            IWETH(WBNB).deposit{value: value}();
+            IWETH(WBNB).deposit{value : value}();
             if (_receiver != address(this)) {
                 IERC20(WBNB).safeTransfer(_receiver, value);
             }
@@ -408,7 +414,7 @@ contract FireBirdZap is ReentrancyGuard {
         }
         address[] memory path = fireBirdPairs[_from][_to];
         uint[] memory amounts;
-        if (path.length > 0) { // use fireBird
+        if (path.length > 0) {// use fireBird
             amounts = fireBirdRouter.swapExactTokensForTokens(_from, _to, _amount, 1, path, _receiver, block.timestamp);
         } else if (_lpOfFromTo != address(0)) {
             path = new address[](1);
@@ -481,25 +487,5 @@ contract FireBirdZap is ReentrancyGuard {
 
     function setMaxResidual(uint _maxResidual) external onlyGovernance {
         maxResidual = _maxResidual;
-    }
-
-    function setUniRouter(IUniswapV2Router _uniRouter) external onlyGovernance {
-        uniRouter = _uniRouter;
-    }
-
-    function setFireBirdRouter(IFireBirdRouter _fireBirdRouter) external onlyGovernance {
-        fireBirdRouter = _fireBirdRouter;
-    }
-
-    function setFireBirdFactory(IFireBirdFactory _fireBirdFactory) external onlyGovernance {
-        fireBirdFactory = _fireBirdFactory;
-    }
-
-    function setFireBirdFormula(IFireBirdFormula _fireBirdFormula) external onlyGovernance {
-        fireBirdFormula = _fireBirdFormula;
-    }
-
-    function setWBNB(address _WBNB) external onlyGovernance {
-        WBNB = _WBNB;
     }
 }

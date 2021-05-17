@@ -68,12 +68,7 @@ describe("FireBirdZap", () => {
         const uniRouter = await new UniswapV2Router02Factory(wallet).deploy(originFactory.address, WETH.address);
 
         //Deploy zapper
-        zap = await new FireBirdZapFactory(wallet).deploy();
-        await zap.setFireBirdFactory(factory.address);
-        await zap.setFireBirdRouter(router.address);
-        await zap.setFireBirdFormula(fixture.formula.address);
-        await zap.setWBNB(WETH.address);
-        await zap.setUniRouter(uniRouter.address);
+        zap = await new FireBirdZapFactory(wallet).deploy(uniRouter.address,router.address);
         await zap.setMaxResidual(10000);
     });
 

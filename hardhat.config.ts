@@ -38,6 +38,12 @@ const config: HardhatUserConfig = {
             bsc: '0x6C844B76d8984a7703Ac4AA211a6507E088D8169',
             bsctestnet: 2,
         },
+        uniRouter: {
+            hardhat: '0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3',
+            local: '0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3',
+            bsc: '0x10ED43C718714eb63d5aA57B78B54704E256024E',
+            bsctestnet: '0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3', //https://pancake.kiemtienonline360.com/
+        },
     },
     etherscan: {
         apiKey: ETHERSCAN_API_KEY,
@@ -69,6 +75,17 @@ const config: HardhatUserConfig = {
                 },
             },
         ],
+        overrides: {
+            "contracts/zapper/FireBirdZap.sol": {
+                version: '0.6.12',
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 9999,
+                    },
+                },
+            }
+        }
     },
 
     networks: {
@@ -144,6 +161,7 @@ const config: HardhatUserConfig = {
     mocha: {
         timeout: 200000
     },
+
     contractSizer: {
         alphaSort: true,
         runOnCompile: true,
