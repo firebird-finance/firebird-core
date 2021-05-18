@@ -457,6 +457,12 @@ contract FireBirdZap is ReentrancyGuard {
         }
     }
 
+    function withdrawTokenAmount(address token, address to, uint256 amount) external onlyGovernance {
+        require(to != address(0), "Zap: Invalid Receiver Address");
+        IERC20(token).transfer(to, amount);
+        emit Withdraw(token, amount, to);
+    }
+
     function _withdraw(address _token, address _to) internal {
         if (_token == address(0)) {
             TransferHelper.safeTransferETH(_to, address(this).balance);
