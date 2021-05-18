@@ -1,0 +1,116 @@
+{
+  "address": "0x9F43f3590540B45cF3247C05FF38130789f9a346",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "a",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "b",
+          "type": "uint256"
+        }
+      ],
+      "name": "difference",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "a",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "b",
+          "type": "uint256"
+        }
+      ],
+      "name": "within1",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xb9bb3874051fc5f38e2112917cfa3bbb1853b2e26d1f658039e5cf4e62a1c379",
+  "receipt": {
+    "to": null,
+    "from": "0x7a1a8Ecd640bB8399DB2c5265A45AD8a91BF63CC",
+    "contractAddress": "0x9F43f3590540B45cF3247C05FF38130789f9a346",
+    "transactionIndex": 4,
+    "gasUsed": "114689",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x571e33eac8b32b76a5fcd9ba7f5c3fd8545056cfdde35b5fe88e86593db2244b",
+    "transactionHash": "0xb9bb3874051fc5f38e2112917cfa3bbb1853b2e26d1f658039e5cf4e62a1c379",
+    "logs": [],
+    "blockNumber": 8925224,
+    "cumulativeGasUsed": "215291",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "solcInputHash": "62812d29f709351baf601151a10eb8e0",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"a\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"b\",\"type\":\"uint256\"}],\"name\":\"difference\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"a\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"b\",\"type\":\"uint256\"}],\"name\":\"within1\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"difference(uint256,uint256)\":{\"params\":{\"a\":\"uint256 to compare with\",\"b\":\"uint256 to compare with\"},\"returns\":{\"_0\":\"Difference between a and b\"}},\"within1(uint256,uint256)\":{\"params\":{\"a\":\"uint256 to compare with\",\"b\":\"uint256 to compare with\"},\"returns\":{\"_0\":\"True if the difference between a and b is less than 1 or equal,         otherwise return false\"}}},\"title\":\"MathUtils library\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"difference(uint256,uint256)\":{\"notice\":\"Calculates absolute difference between a and b\"},\"within1(uint256,uint256)\":{\"notice\":\"Compares a and b and returns true if the difference between a and b         is less than 1 or equal to each other.\"}},\"notice\":\"A library to be used in conjunction with SafeMath. Contains functions for calculating differences between two uint256.\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/stableSwap/MathUtils.sol\":\"MathUtils\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":999999},\"remappings\":[]},\"sources\":{\"@openzeppelin/contracts/math/SafeMath.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity >=0.6.0 <0.8.0;\\n\\n/**\\n * @dev Wrappers over Solidity's arithmetic operations with added overflow\\n * checks.\\n *\\n * Arithmetic operations in Solidity wrap on overflow. This can easily result\\n * in bugs, because programmers usually assume that an overflow raises an\\n * error, which is the standard behavior in high level programming languages.\\n * `SafeMath` restores this intuition by reverting the transaction when an\\n * operation overflows.\\n *\\n * Using this library instead of the unchecked operations eliminates an entire\\n * class of bugs, so it's recommended to use it always.\\n */\\nlibrary SafeMath {\\n    /**\\n     * @dev Returns the addition of two unsigned integers, with an overflow flag.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function tryAdd(uint256 a, uint256 b) internal pure returns (bool, uint256) {\\n        uint256 c = a + b;\\n        if (c < a) return (false, 0);\\n        return (true, c);\\n    }\\n\\n    /**\\n     * @dev Returns the substraction of two unsigned integers, with an overflow flag.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function trySub(uint256 a, uint256 b) internal pure returns (bool, uint256) {\\n        if (b > a) return (false, 0);\\n        return (true, a - b);\\n    }\\n\\n    /**\\n     * @dev Returns the multiplication of two unsigned integers, with an overflow flag.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function tryMul(uint256 a, uint256 b) internal pure returns (bool, uint256) {\\n        // Gas optimization: this is cheaper than requiring 'a' not being zero, but the\\n        // benefit is lost if 'b' is also tested.\\n        // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522\\n        if (a == 0) return (true, 0);\\n        uint256 c = a * b;\\n        if (c / a != b) return (false, 0);\\n        return (true, c);\\n    }\\n\\n    /**\\n     * @dev Returns the division of two unsigned integers, with a division by zero flag.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function tryDiv(uint256 a, uint256 b) internal pure returns (bool, uint256) {\\n        if (b == 0) return (false, 0);\\n        return (true, a / b);\\n    }\\n\\n    /**\\n     * @dev Returns the remainder of dividing two unsigned integers, with a division by zero flag.\\n     *\\n     * _Available since v3.4._\\n     */\\n    function tryMod(uint256 a, uint256 b) internal pure returns (bool, uint256) {\\n        if (b == 0) return (false, 0);\\n        return (true, a % b);\\n    }\\n\\n    /**\\n     * @dev Returns the addition of two unsigned integers, reverting on\\n     * overflow.\\n     *\\n     * Counterpart to Solidity's `+` operator.\\n     *\\n     * Requirements:\\n     *\\n     * - Addition cannot overflow.\\n     */\\n    function add(uint256 a, uint256 b) internal pure returns (uint256) {\\n        uint256 c = a + b;\\n        require(c >= a, \\\"SafeMath: addition overflow\\\");\\n        return c;\\n    }\\n\\n    /**\\n     * @dev Returns the subtraction of two unsigned integers, reverting on\\n     * overflow (when the result is negative).\\n     *\\n     * Counterpart to Solidity's `-` operator.\\n     *\\n     * Requirements:\\n     *\\n     * - Subtraction cannot overflow.\\n     */\\n    function sub(uint256 a, uint256 b) internal pure returns (uint256) {\\n        require(b <= a, \\\"SafeMath: subtraction overflow\\\");\\n        return a - b;\\n    }\\n\\n    /**\\n     * @dev Returns the multiplication of two unsigned integers, reverting on\\n     * overflow.\\n     *\\n     * Counterpart to Solidity's `*` operator.\\n     *\\n     * Requirements:\\n     *\\n     * - Multiplication cannot overflow.\\n     */\\n    function mul(uint256 a, uint256 b) internal pure returns (uint256) {\\n        if (a == 0) return 0;\\n        uint256 c = a * b;\\n        require(c / a == b, \\\"SafeMath: multiplication overflow\\\");\\n        return c;\\n    }\\n\\n    /**\\n     * @dev Returns the integer division of two unsigned integers, reverting on\\n     * division by zero. The result is rounded towards zero.\\n     *\\n     * Counterpart to Solidity's `/` operator. Note: this function uses a\\n     * `revert` opcode (which leaves remaining gas untouched) while Solidity\\n     * uses an invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     *\\n     * - The divisor cannot be zero.\\n     */\\n    function div(uint256 a, uint256 b) internal pure returns (uint256) {\\n        require(b > 0, \\\"SafeMath: division by zero\\\");\\n        return a / b;\\n    }\\n\\n    /**\\n     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),\\n     * reverting when dividing by zero.\\n     *\\n     * Counterpart to Solidity's `%` operator. This function uses a `revert`\\n     * opcode (which leaves remaining gas untouched) while Solidity uses an\\n     * invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     *\\n     * - The divisor cannot be zero.\\n     */\\n    function mod(uint256 a, uint256 b) internal pure returns (uint256) {\\n        require(b > 0, \\\"SafeMath: modulo by zero\\\");\\n        return a % b;\\n    }\\n\\n    /**\\n     * @dev Returns the subtraction of two unsigned integers, reverting with custom message on\\n     * overflow (when the result is negative).\\n     *\\n     * CAUTION: This function is deprecated because it requires allocating memory for the error\\n     * message unnecessarily. For custom revert reasons use {trySub}.\\n     *\\n     * Counterpart to Solidity's `-` operator.\\n     *\\n     * Requirements:\\n     *\\n     * - Subtraction cannot overflow.\\n     */\\n    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {\\n        require(b <= a, errorMessage);\\n        return a - b;\\n    }\\n\\n    /**\\n     * @dev Returns the integer division of two unsigned integers, reverting with custom message on\\n     * division by zero. The result is rounded towards zero.\\n     *\\n     * CAUTION: This function is deprecated because it requires allocating memory for the error\\n     * message unnecessarily. For custom revert reasons use {tryDiv}.\\n     *\\n     * Counterpart to Solidity's `/` operator. Note: this function uses a\\n     * `revert` opcode (which leaves remaining gas untouched) while Solidity\\n     * uses an invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     *\\n     * - The divisor cannot be zero.\\n     */\\n    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {\\n        require(b > 0, errorMessage);\\n        return a / b;\\n    }\\n\\n    /**\\n     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),\\n     * reverting with custom message when dividing by zero.\\n     *\\n     * CAUTION: This function is deprecated because it requires allocating memory for the error\\n     * message unnecessarily. For custom revert reasons use {tryMod}.\\n     *\\n     * Counterpart to Solidity's `%` operator. This function uses a `revert`\\n     * opcode (which leaves remaining gas untouched) while Solidity uses an\\n     * invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     *\\n     * - The divisor cannot be zero.\\n     */\\n    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {\\n        require(b > 0, errorMessage);\\n        return a % b;\\n    }\\n}\\n\",\"keccak256\":\"0xcc78a17dd88fa5a2edc60c8489e2f405c0913b377216a5b26b35656b2d0dab52\",\"license\":\"MIT\"},\"contracts/stableSwap/MathUtils.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity 0.6.12;\\n\\nimport \\\"@openzeppelin/contracts/math/SafeMath.sol\\\";\\n\\n/**\\n * @title MathUtils library\\n * @notice A library to be used in conjunction with SafeMath. Contains functions for calculating\\n * differences between two uint256.\\n */\\nlibrary MathUtils {\\n    /**\\n     * @notice Compares a and b and returns true if the difference between a and b\\n     *         is less than 1 or equal to each other.\\n     * @param a uint256 to compare with\\n     * @param b uint256 to compare with\\n     * @return True if the difference between a and b is less than 1 or equal,\\n     *         otherwise return false\\n     */\\n    function within1(uint256 a, uint256 b) external pure returns (bool) {\\n        return (_difference(a, b) <= 1);\\n    }\\n\\n    /**\\n     * @notice Calculates absolute difference between a and b\\n     * @param a uint256 to compare with\\n     * @param b uint256 to compare with\\n     * @return Difference between a and b\\n     */\\n    function difference(uint256 a, uint256 b) external pure returns (uint256) {\\n        return _difference(a, b);\\n    }\\n\\n    /**\\n     * @notice Calculates absolute difference between a and b\\n     * @param a uint256 to compare with\\n     * @param b uint256 to compare with\\n     * @return Difference between a and b\\n     */\\n    function _difference(uint256 a, uint256 b) internal pure returns (uint256) {\\n        if (a > b) {\\n            return a - b;\\n        }\\n        return b - a;\\n    }\\n}\\n\",\"keccak256\":\"0xfcbf4da0de5a883f3c009d389011cc926034d9957269a1f0a5f5985e9ddee163\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x61011c610026600b82828239805160001a60731461001957fe5b30600052607381538281f3fe7300000000000000000000000000000000000000003014608060405260043610603d5760003560e01c806313a1ec75146042578063a95cb7f7146076575b600080fd5b606260048036036040811015605657600080fd5b508035906020013560a8565b604080519115158252519081900360200190f35b609660048036036040811015608a57600080fd5b508035906020013560bf565b60408051918252519081900360200190f35b6000600160b4848460d0565b111590505b92915050565b600060c9838360d0565b9392505050565b60008183111560e1575080820360b9565b50039056fea2646970667358221220d6b1faa5798c26f356103e022fed427f0fe833e5a9fbaaaea45e5581dc9c77bc64736f6c634300060c0033",
+  "deployedBytecode": "0x7300000000000000000000000000000000000000003014608060405260043610603d5760003560e01c806313a1ec75146042578063a95cb7f7146076575b600080fd5b606260048036036040811015605657600080fd5b508035906020013560a8565b604080519115158252519081900360200190f35b609660048036036040811015608a57600080fd5b508035906020013560bf565b60408051918252519081900360200190f35b6000600160b4848460d0565b111590505b92915050565b600060c9838360d0565b9392505050565b60008183111560e1575080820360b9565b50039056fea2646970667358221220d6b1faa5798c26f356103e022fed427f0fe833e5a9fbaaaea45e5581dc9c77bc64736f6c634300060c0033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "difference(uint256,uint256)": {
+        "params": {
+          "a": "uint256 to compare with",
+          "b": "uint256 to compare with"
+        },
+        "returns": {
+          "_0": "Difference between a and b"
+        }
+      },
+      "within1(uint256,uint256)": {
+        "params": {
+          "a": "uint256 to compare with",
+          "b": "uint256 to compare with"
+        },
+        "returns": {
+          "_0": "True if the difference between a and b is less than 1 or equal,         otherwise return false"
+        }
+      }
+    },
+    "title": "MathUtils library",
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "difference(uint256,uint256)": {
+        "notice": "Calculates absolute difference between a and b"
+      },
+      "within1(uint256,uint256)": {
+        "notice": "Compares a and b and returns true if the difference between a and b         is less than 1 or equal to each other."
+      }
+    },
+    "notice": "A library to be used in conjunction with SafeMath. Contains functions for calculating differences between two uint256.",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}

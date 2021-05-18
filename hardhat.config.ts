@@ -128,6 +128,14 @@ const config: HardhatUserConfig = {
             loggingEnabled: true,
             url: `https://data-seed-prebsc-1-s2.binance.org:8545`,
         },
+        bsc: {
+            tags: ['production'],
+            live: true,
+            saveDeployments: true,
+            accounts,
+            loggingEnabled: true,
+            url: `https://bsc-dataseed.binance.org/`,
+        },
         ganache: {
             tags: ['local'],
             live: true,
