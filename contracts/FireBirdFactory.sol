@@ -34,8 +34,8 @@ contract FireBirdFactory is IFireBirdFactory {
     function createPair(address tokenA, address tokenB, uint32 tokenWeightA, uint32 swapFee) external returns (address pair) {
         require(tokenA != tokenB, 'FBP: IDENTICAL_ADDRESSES');
         require(tokenWeightA >= 2 && tokenWeightA <= 98 && (tokenWeightA % 2) == 0, 'FBP: INVALID_TOKEN_WEIGHT');
-        // swap fee from [0.05% - 10%] step = 0.05%
-        require(swapFee >= 5 && swapFee <= 1000 && swapFee % 5 == 0, 'FBP: INVALID_SWAP_FEE');
+        // swap fee from [0.01% - 20%]
+        require(swapFee >= 1 && swapFee <= 2000, 'FBP: INVALID_SWAP_FEE');
         (address token0, address token1, uint32 tokenWeight0) = tokenA < tokenB ? (tokenA, tokenB, tokenWeightA) : (tokenB, tokenA, 100 - tokenWeightA);
         require(token0 != address(0), 'FBP: ZERO_ADDRESS');
         // single check is sufficient
