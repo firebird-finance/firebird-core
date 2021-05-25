@@ -77,8 +77,8 @@ contract FireBirdFactory is IFireBirdFactory {
             tokenWeight0 = uint32(weightAndFee>>32);
             tokenWeight1 = 100 - tokenWeight0;
         } else {
-            // Default is pancake swap v2 0.25%
-            return (50, 50, 25);
+            // Default is 0.3%
+            return (50, 50, 30);
         }
     }
 }

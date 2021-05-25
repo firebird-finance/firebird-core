@@ -751,7 +751,7 @@ contract FireBirdFormula is IFireBirdFormula {
         } catch Error(string memory reason) {
             revert(reason);
         } catch (bytes memory /*lowLevelData*/) {
-            return (50, 50, 25);
+            return (50, 50, 30);
         }
     }
 
