@@ -71,6 +71,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 			log: true
 		}, "addStakePoolCreator", stakePoolEpochRewardCreator.address);
 	}
+	await execute("StakePoolController", {from: deployer, log: true}, "setGovernance", governance);
 
 
 };
