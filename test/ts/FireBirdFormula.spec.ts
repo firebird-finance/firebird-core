@@ -41,13 +41,13 @@ describe('FireBirdFormula', () => {
 		expect(await formula.quote(BigNumber.from(1), BigNumber.from(100), BigNumber.from(200))).to.eq(BigNumber.from(2))
 		expect(await formula.quote(BigNumber.from(2), BigNumber.from(200), BigNumber.from(100))).to.eq(BigNumber.from(1))
 		await expect(formula.quote(BigNumber.from(0), BigNumber.from(100), BigNumber.from(200))).to.be.revertedWith(
-			'ValueFormula: INSUFFICIENT_AMOUNT'
+			'FireBirdFormula: INSUFFICIENT_AMOUNT'
 		)
 		await expect(formula.quote(BigNumber.from(1), BigNumber.from(0), BigNumber.from(200))).to.be.revertedWith(
-			'ValueFormula: INSUFFICIENT_LIQUIDITY'
+			'FireBirdFormula: INSUFFICIENT_LIQUIDITY'
 		)
 		await expect(formula.quote(BigNumber.from(1), BigNumber.from(100), BigNumber.from(0))).to.be.revertedWith(
-			'ValueFormula: INSUFFICIENT_LIQUIDITY'
+			'FireBirdFormula: INSUFFICIENT_LIQUIDITY'
 		)
 	})
 
@@ -55,13 +55,13 @@ describe('FireBirdFormula', () => {
 		expect(await formula.getAmountOut(BigNumber.from(4), BigNumber.from(100), BigNumber.from(100), 50, 50, 30)).to.eq(BigNumber.from(3))
 		expect(await formula.getAmountOut(BigNumber.from(3242), BigNumber.from(12344502), BigNumber.from(32304234), 50, 50, 30)).to.eq(BigNumber.from(8456))
 		await expect(formula.getAmountOut(BigNumber.from(0), BigNumber.from(100), BigNumber.from(100), 50, 50, 30)).to.be.revertedWith(
-			'ValueFormula: INSUFFICIENT_INPUT_AMOUNT'
+			'FireBirdFormula: INSUFFICIENT_INPUT_AMOUNT'
 		)
 		await expect(formula.getAmountOut(BigNumber.from(2), BigNumber.from(0), BigNumber.from(100), 50, 50, 30)).to.be.revertedWith(
-			'ValueFormula: INSUFFICIENT_LIQUIDITY'
+			'FireBirdFormula: INSUFFICIENT_LIQUIDITY'
 		)
 		await expect(formula.getAmountOut(BigNumber.from(2), BigNumber.from(100), BigNumber.from(0), 50, 50, 30)).to.be.revertedWith(
-			'ValueFormula: INSUFFICIENT_LIQUIDITY'
+			'FireBirdFormula: INSUFFICIENT_LIQUIDITY'
 		)
 	})
 
@@ -70,13 +70,13 @@ describe('FireBirdFormula', () => {
 		// expect(await router.getAmountIn(BigNumber.from(1), BigNumber.from(100), BigNumber.from(100), 50, 50, 3)).to.eq(BigNumber.from(2))
 		expect(await formula.getAmountIn(BigNumber.from(3242), BigNumber.from(12344502), BigNumber.from(32304234), 50, 50, 30)).to.eq(BigNumber.from(1243))
 		await expect(formula.getAmountIn(BigNumber.from(0), BigNumber.from(100), BigNumber.from(100), 50, 50, 30)).to.be.revertedWith(
-			'ValueFormula: INSUFFICIENT_OUTPUT_AMOUNT'
+			'FireBirdFormula: INSUFFICIENT_OUTPUT_AMOUNT'
 		)
 		await expect(formula.getAmountIn(BigNumber.from(1), BigNumber.from(0), BigNumber.from(100), 50, 50, 30)).to.be.revertedWith(
-			'ValueFormula: INSUFFICIENT_LIQUIDITY'
+			'FireBirdFormula: INSUFFICIENT_LIQUIDITY'
 		)
 		await expect(formula.getAmountIn(BigNumber.from(1), BigNumber.from(100), BigNumber.from(0), 50, 50, 30)).to.be.revertedWith(
-			'ValueFormula: INSUFFICIENT_LIQUIDITY'
+			'FireBirdFormula: INSUFFICIENT_LIQUIDITY'
 		)
 	})
 
@@ -98,7 +98,7 @@ describe('FireBirdFormula', () => {
 		)
 
 		await expect(formula.getAmountsOut(token0.address, token1.address, BigNumber.from(2), [])).to.be.revertedWith(
-			'ValueFormula: INVALID_PATH'
+			'FireBirdFormula: INVALID_PATH'
 		)
 		const path = [pair.address]
 		expect(await formula.getAmountsOut(token0.address, token1.address, BigNumber.from(4), path)).to.deep.eq([BigNumber.from(4), BigNumber.from(3)])
@@ -121,7 +121,7 @@ describe('FireBirdFormula', () => {
 		)
 
 		await expect(formula.getAmountsIn(token0.address, token1.address, BigNumber.from(1), [])).to.be.revertedWith(
-			'ValueFormula: INVALID_PATH'
+			'FireBirdFormula: INVALID_PATH'
 		)
 		const path = [pair.address]
 		expect(await formula.getAmountsIn(token0.address, token1.address, BigNumber.from(1), path)).to.deep.eq([BigNumber.from(2), BigNumber.from(1)])

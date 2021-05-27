@@ -25,23 +25,27 @@ const config: HardhatUserConfig = {
         weth: {
             bsctestnet: '0xae13d989dac2f0debff460ac112a837c89baa7cd',
             bsc: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+            matic: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
         },
         governance: {
             hardhat: 1,
             local: 1,
             bsc: '0xA20CA7c6705fB88847Cbf50549D7A38f4e99d32c',
+            matic: '0xA20CA7c6705fB88847Cbf50549D7A38f4e99d32c',
             bsctestnet: 1,
         },
         proxyAdmin: {
             hardhat: 2,
             local: 2,
             bsc: '0x6C844B76d8984a7703Ac4AA211a6507E088D8169',
+            matic: '0x6C844B76d8984a7703Ac4AA211a6507E088D8169',
             bsctestnet: 2,
         },
         uniRouter: {
             hardhat: '0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3',
             local: '0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3',
             bsc: '0x10ED43C718714eb63d5aA57B78B54704E256024E',
+            matic: '0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff',
             bsctestnet: '0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3', //https://pancake.kiemtienonline360.com/
         },
     },
@@ -135,6 +139,14 @@ const config: HardhatUserConfig = {
             accounts,
             loggingEnabled: true,
             url: `https://bsc-dataseed.binance.org/`,
+        },
+        matic: {
+            tags: ['production'],
+            live: true,
+            saveDeployments: true,
+            accounts,
+            loggingEnabled: true,
+            url: `https://rpc-mainnet.maticvigil.com/`,
         },
         ganache: {
             tags: ['local'],

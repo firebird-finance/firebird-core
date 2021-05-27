@@ -19,7 +19,7 @@
         "coverage": "npm run build && npx buidler coverage --temp artifacts --network coverage",
         "lint:contracts": "solhint contracts/*.sol",
         "prettier:contracts": "yarn prettier --write contract-mainnet/*.sol",
-        "flat:contracts": "sol-merger \"./contracts/**/*.sol\" ./build/contract-flat",
+        "flat:contracts": "sol-merger \"./contracts/*.sol\" ./build/contract-flat",
         "flat:hardhat": "hardhat flatten"
     },
     "repository": {

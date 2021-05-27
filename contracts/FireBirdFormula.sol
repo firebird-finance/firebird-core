@@ -620,8 +620,8 @@ contract FireBirdFormula is IFireBirdFormula {
         uint32 swapFee
     ) public override view returns (uint amountOut) {
         // validate input
-        require(amountIn > 0, 'ValueFormula: INSUFFICIENT_INPUT_AMOUNT');
-        require(reserveIn > 0 && reserveOut > 0, "ValueFormula: INSUFFICIENT_LIQUIDITY");
+        require(amountIn > 0, 'FireBirdFormula: INSUFFICIENT_INPUT_AMOUNT');
+        require(reserveIn > 0 && reserveOut > 0, "FireBirdFormula: INSUFFICIENT_LIQUIDITY");
         uint amountInWithFee = amountIn.mul(10000 - swapFee);
         // special case for equal weights
         if (tokenWeightIn == tokenWeightOut) {
@@ -660,8 +660,8 @@ contract FireBirdFormula is IFireBirdFormula {
         uint32 swapFee
     ) public override view returns (uint amountIn) {
         // validate input
-        require(amountOut > 0, 'ValueFormula: INSUFFICIENT_OUTPUT_AMOUNT');
-        require(reserveIn > 0 && reserveOut > 0, "ValueFormula: INSUFFICIENT_LIQUIDITY");
+        require(amountOut > 0, 'FireBirdFormula: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(reserveIn > 0 && reserveOut > 0, "FireBirdFormula: INSUFFICIENT_LIQUIDITY");
         // special case for equal weights
         if (tokenWeightIn == tokenWeightOut) {
             uint numerator = reserveIn.mul(amountOut).mul(10000);
@@ -681,7 +681,7 @@ contract FireBirdFormula is IFireBirdFormula {
 
     // performs chained getAmountOut calculations on any number of pairs
     function getAmountsOut(address tokenIn, address tokenOut, uint amountIn, address[] calldata path) external override view returns (uint[] memory amounts) {
-        require(path.length > 0, 'ValueFormula: INVALID_PATH');
+        require(path.length > 0, 'FireBirdFormula: INVALID_PATH');
         amounts = new uint[](path.length + 1);
         amounts[0] = amountIn;
         address currentTokenIn = tokenIn;
@@ -690,11 +690,11 @@ contract FireBirdFormula is IFireBirdFormula {
             amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut, tokenWeightIn, tokenWeightOut, swapFee);
             currentTokenIn = currentTokenOut;
         }
-        require(currentTokenIn == tokenOut, 'ValueFormula: INVALID_TOKEN_OUT_PATH');
+        require(currentTokenIn == tokenOut, 'FireBirdFormula: INVALID_TOKEN_OUT_PATH');
     }
 
     function getFactoryAmountsOut(address factory, address tokenIn, address tokenOut, uint amountIn, address[] calldata path) external override view returns (uint[] memory amounts) {
-        require(path.length > 0, 'ValueFormula: INVALID_PATH');
+        require(path.length > 0, 'FireBirdFormula: INVALID_PATH');
         amounts = new uint[](path.length + 1);
         amounts[0] = amountIn;
         address currentTokenIn = tokenIn;
@@ -703,7 +703,7 @@ contract FireBirdFormula is IFireBirdFormula {
             amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut, tokenWeightIn, tokenWeightOut, swapFee);
             currentTokenIn = currentTokenOut;
         }
-        require(currentTokenIn == tokenOut, 'ValueFormula: INVALID_TOKEN_OUT_PATH');
+        require(currentTokenIn == tokenOut, 'FireBirdFormula: INVALID_TOKEN_OUT_PATH');
     }
 
     function getPairAmountOut(address pair, address tokenIn, uint amountIn) external override view returns (uint amountOut) {
@@ -713,7 +713,7 @@ contract FireBirdFormula is IFireBirdFormula {
 
     // performs chained getAmountIn calculations on any number of pairs
     function getAmountsIn(address tokenIn, address tokenOut, uint amountOut, address[] calldata path) external override view returns (uint[] memory amounts) {
-        require(path.length > 0, 'ValueFormula: INVALID_PATH');
+        require(path.length > 0, 'FireBirdFormula: INVALID_PATH');
         amounts = new uint[](path.length + 1);
         amounts[amounts.length - 1] = amountOut;
         address currentTokenIn = tokenOut;
@@ -723,11 +723,11 @@ contract FireBirdFormula is IFireBirdFormula {
             currentTokenIn = currentTokenOut;
 
         }
-        require(currentTokenIn == tokenIn, 'ValueFormula: INVALID_TOKEN_IN_PATH');
+        require(currentTokenIn == tokenIn, 'FireBirdFormula: INVALID_TOKEN_IN_PATH');
     }
 
     function getFactoryAmountsIn(address factory, address tokenIn, address tokenOut, uint amountOut, address[] calldata path) external override view returns (uint[] memory amounts) {
-        require(path.length > 0, 'ValueFormula: INVALID_PATH');
+        require(path.length > 0, 'FireBirdFormula: INVALID_PATH');
         amounts = new uint[](path.length + 1);
         amounts[amounts.length - 1] = amountOut;
         address currentTokenIn = tokenOut;
@@ -737,7 +737,7 @@ contract FireBirdFormula is IFireBirdFormula {
             currentTokenIn = currentTokenOut;
 
         }
-        require(currentTokenIn == tokenIn, 'ValueFormula: INVALID_TOKEN_IN_PATH');
+        require(currentTokenIn == tokenIn, 'FireBirdFormula: INVALID_TOKEN_IN_PATH');
     }
 
     function getPairAmountIn(address pair, address tokenIn, uint amountOut) external override view returns (uint amountIn) {
@@ -793,9 +793,9 @@ contract FireBirdFormula is IFireBirdFormula {
     }
 
     function sortTokens(address tokenA, address tokenB) public pure override returns (address token0, address token1) {
-        require(tokenA != tokenB, 'ValueFormula: IDENTICAL_ADDRESSES');
+        require(tokenA != tokenB, 'FireBirdFormula: IDENTICAL_ADDRESSES');
         (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'ValueFormula: ZERO_ADDRESS');
+        require(token0 != address(0), 'FireBirdFormula: ZERO_ADDRESS');
     }
 
     function getReserves(address pair, address tokenA, address tokenB) external view override returns (uint reserveA, uint reserveB) {
@@ -811,8 +811,8 @@ contract FireBirdFormula is IFireBirdFormula {
     }
     // given some amount of an asset and pair reserves, returns an equivalent amount of the other asset
     function quote(uint amountA, uint reserveA, uint reserveB) external pure override returns (uint amountB) {
-        require(amountA > 0, 'ValueFormula: INSUFFICIENT_AMOUNT');
-        require(reserveA > 0 && reserveB > 0, 'ValueFormula: INSUFFICIENT_LIQUIDITY');
+        require(amountA > 0, 'FireBirdFormula: INSUFFICIENT_AMOUNT');
+        require(reserveA > 0 && reserveB > 0, 'FireBirdFormula: INSUFFICIENT_LIQUIDITY');
         amountB = amountA.mul(reserveB) / reserveA;
     }
     function mintLiquidityFee(
