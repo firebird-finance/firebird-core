@@ -50,7 +50,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 		args: [],
 		log: true,
 	});
-	const factoryProxy = await deploy(" ", {
+	const factoryProxy = await deploy("StableSwapFactoryProxy", {
 		contract: "AdminUpgradeabilityProxy",
 		skipIfAlreadyDeployed: true,
 		from: deployer,
