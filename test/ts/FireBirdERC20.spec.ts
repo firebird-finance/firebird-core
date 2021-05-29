@@ -34,13 +34,13 @@ describe('FireBirdErc20', () => {
 		signers = await ethers.getSigners();
 		wallet = signers[0];
 		other = signers[1];
-		token = await new FireBirdErc20WrapperFactory(wallet).deploy('FireBird Provider V2','FBP-V2', TOTAL_SUPPLY)
+		token = await new FireBirdErc20WrapperFactory(wallet).deploy(TOTAL_SUPPLY)
 	})
 
 	it('name, symbol, decimals, totalSupply, balanceOf, DOMAIN_SEPARATOR, PERMIT_TYPEHASH', async () => {
 		const name = await token.name()
-		expect(name).to.eq('FireBird Provider V2')
-		expect(await token.symbol()).to.eq('FBP-V2')
+		expect(name).to.eq('FireBird Liquidity Provider')
+		expect(await token.symbol()).to.eq('FLP')
 		expect(await token.decimals()).to.eq(18)
 		expect(await token.totalSupply()).to.eq(TOTAL_SUPPLY)
 		expect(await token.balanceOf(wallet.address)).to.eq(TOTAL_SUPPLY)

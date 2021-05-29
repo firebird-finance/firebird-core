@@ -32,16 +32,16 @@ contract FireBirdFactory is IFireBirdFactory {
         pair = _pairSalts[salt];
     }
     function createPair(address tokenA, address tokenB, uint32 tokenWeightA, uint32 swapFee) external returns (address pair) {
-        require(tokenA != tokenB, 'FBP: IDENTICAL_ADDRESSES');
-        require(tokenWeightA >= 2 && tokenWeightA <= 98 && (tokenWeightA % 2) == 0, 'FBP: INVALID_TOKEN_WEIGHT');
+        require(tokenA != tokenB, 'FLP: IDENTICAL_ADDRESSES');
+        require(tokenWeightA >= 2 && tokenWeightA <= 98 && (tokenWeightA % 2) == 0, 'FLP: INVALID_TOKEN_WEIGHT');
         // swap fee from [0.01% - 20%]
-        require(swapFee >= 1 && swapFee <= 2000, 'FBP: INVALID_SWAP_FEE');
+        require(swapFee >= 1 && swapFee <= 2000, 'FLP: INVALID_SWAP_FEE');
         (address token0, address token1, uint32 tokenWeight0) = tokenA < tokenB ? (tokenA, tokenB, tokenWeightA) : (tokenB, tokenA, 100 - tokenWeightA);
-        require(token0 != address(0), 'FBP: ZERO_ADDRESS');
+        require(token0 != address(0), 'FLP: ZERO_ADDRESS');
         // single check is sufficient
         bytes memory bytecode = type(FireBirdPair).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1, tokenWeight0, swapFee));
-        require(_pairSalts[salt] == address(0), 'FBP: PAIR_EXISTS');
+        require(_pairSalts[salt] == address(0), 'FLP: PAIR_EXISTS');
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
@@ -55,18 +55,18 @@ contract FireBirdFactory is IFireBirdFactory {
     }
 
     function setFeeTo(address _feeTo) external {
-        require(msg.sender == feeToSetter, 'FBP: FORBIDDEN');
+        require(msg.sender == feeToSetter, 'FLP: FORBIDDEN');
         feeTo = _feeTo;
     }
 
     function setFeeToSetter(address _feeToSetter) external {
-        require(msg.sender == feeToSetter, 'FBP: FORBIDDEN');
+        require(msg.sender == feeToSetter, 'FLP: FORBIDDEN');
         feeToSetter = _feeToSetter;
     }
 
     function setProtocolFee(uint _protocolFee) external {
-        require(msg.sender == feeToSetter, 'FBP: FORBIDDEN');
-        require(_protocolFee == 0 || (_protocolFee >= 10000 && _protocolFee <= 100000), 'FBP: Invalid Protocol fee');
+        require(msg.sender == feeToSetter, 'FLP: FORBIDDEN');
+        require(_protocolFee == 0 || (_protocolFee >= 10000 && _protocolFee <= 100000), 'FLP: Invalid Protocol fee');
         protocolFee = _protocolFee;
     }
 

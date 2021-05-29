@@ -70,8 +70,8 @@ describe("FireBirdPairWeight", () => {
       const expectedOutputAmount = BigNumber.from(await formula.getAmountOut(swapAmount, token0Amount, token1Amount, tokenWeight0, tokenWeight1, 40));
       await addLiquidity(token0Amount, token1Amount);
       await token0.transfer(pair.address, swapAmount);
-      await expect(pair.swap(0, expectedOutputAmount.add(2), wallet.address, "0x", overrides)).to.be.revertedWith("FBP: K");
-      await expect(pair.swap(swapAmount.add(1), expectedOutputAmount.add(2), wallet.address, "0x", overrides)).to.be.revertedWith("FBP: K");
+      await expect(pair.swap(0, expectedOutputAmount.add(2), wallet.address, "0x", overrides)).to.be.revertedWith("FLP: K");
+      await expect(pair.swap(swapAmount.add(1), expectedOutputAmount.add(2), wallet.address, "0x", overrides)).to.be.revertedWith("FLP: K");
       await pair.swap(0, expectedOutputAmount, wallet.address, "0x", overrides);
     });
     it(`getInputPrice:token1:${i}`, async () => {
@@ -80,7 +80,7 @@ describe("FireBirdPairWeight", () => {
       const expectedInputAmountIn = await formula.getAmountIn(amountOut, token1Amount, token0Amount, tokenWeight1, tokenWeight0, 40);
       await addLiquidity(token0Amount, token1Amount);
       await token1.transfer(pair.address, expectedInputAmountIn);
-      await expect(pair.swap(amountOut.add(5), 0, wallet.address, "0x", overrides)).to.be.revertedWith("FBP: K");
+      await expect(pair.swap(amountOut.add(5), 0, wallet.address, "0x", overrides)).to.be.revertedWith("FLP: K");
       await expect(pair.swap(amountOut.add(5), expectedInputAmountIn.add(1), wallet.address, "0x", overrides)).to.be.reverted;
       await pair.swap(amountOut, 0, wallet.address, "0x", overrides);
     });
@@ -97,14 +97,14 @@ describe("FireBirdPairWeight", () => {
       const [outputAmount, token0Amount, token1Amount, inputAmount] = optimisticTestCase;
       await addLiquidity(token0Amount, token1Amount);
       await token0.transfer(pair.address, inputAmount);
-      await expect(pair.swap(outputAmount.add(1), 0, wallet.address, "0x", overrides)).to.be.revertedWith("FBP: K");
+      await expect(pair.swap(outputAmount.add(1), 0, wallet.address, "0x", overrides)).to.be.revertedWith("FLP: K");
       await pair.swap(outputAmount, 0, wallet.address, "0x", overrides);
     });
     it(`optimistic:token1:${i}`, async () => {
       const [outputAmount, token0Amount, token1Amount, inputAmount] = optimisticTestCase;
       await addLiquidity(token0Amount, token1Amount);
       await token1.transfer(pair.address, inputAmount);
-      await expect(pair.swap(0, outputAmount.add(1), wallet.address, "0x", overrides)).to.be.revertedWith("FBP: K");
+      await expect(pair.swap(0, outputAmount.add(1), wallet.address, "0x", overrides)).to.be.revertedWith("FLP: K");
       await pair.swap(0, outputAmount, wallet.address, "0x", overrides);
     });
   });

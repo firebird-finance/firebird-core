@@ -50,8 +50,8 @@ describe('FireBirdFactory', () => {
 			.to.emit(factory, 'PairCreated')
 			.withArgs(TEST_ADDRESSES[0], TEST_ADDRESSES[1], create2Address, tokenWeightA, swapFee, BigNumber.from(allPairsLength + 1))
 
-		await expect(factory.createPair(...tokens)).to.be.reverted // FBP: PAIR_EXISTS
-		await expect(factory.createPair(...tokens.slice().reverse())).to.be.reverted // FBP: PAIR_EXISTS
+		await expect(factory.createPair(...tokens)).to.be.reverted // FLP: PAIR_EXISTS
+		await expect(factory.createPair(...tokens.slice().reverse())).to.be.reverted // FLP: PAIR_EXISTS
 		expect(await factory.getPair(...tokens, tokenWeightA, swapFee)).to.eq(create2Address)
 		expect(await factory.getPair(...tokens.slice().reverse(), 100 - tokenWeightA, swapFee)).to.eq(create2Address)
 
@@ -73,7 +73,7 @@ describe('FireBirdFactory', () => {
 
 	it('createPair', async () => {
 		await createPair(TEST_ADDRESSES, 50, 30)
-		await expect(factory.createPair(...TEST_ADDRESSES, 50, 30)).to.be.revertedWith('FBP: PAIR_EXISTS')
+		await expect(factory.createPair(...TEST_ADDRESSES, 50, 30)).to.be.revertedWith('FLP: PAIR_EXISTS')
 		await createPair(TEST_ADDRESSES, 50, 40)
 		await createPair(TEST_ADDRESSES, 10, 500)
 		await createPair(TEST_ADDRESSES, 10, 5)
@@ -83,15 +83,15 @@ describe('FireBirdFactory', () => {
 		await expect(createPair([
 			'0x1000000000000000000000000000000000000000',
 			'0x0000000000000000000000000000000000000000'
-		], 50, 30)).to.be.revertedWith('FBP: ZERO_ADDRESS')
-		await expect(createPair(TEST_ADDRESSES, 0, 30)).to.be.revertedWith('FBP: INVALID_TOKEN_WEIGHT')
-		await expect(createPair(TEST_ADDRESSES, 100, 30)).to.be.revertedWith('FBP: INVALID_TOKEN_WEIGHT')
-		await expect(createPair(TEST_ADDRESSES, 99, 30)).to.be.revertedWith('FBP: INVALID_TOKEN_WEIGHT')
-		await expect(createPair(TEST_ADDRESSES, 51, 30)).to.be.revertedWith('FBP: INVALID_TOKEN_WEIGHT')
-		await expect(createPair(TEST_ADDRESSES, 40, 0)).to.be.revertedWith('FBP: INVALID_SWAP_FEE')
-		await expect(createPair(TEST_ADDRESSES, 40, 2000)).to.be.revertedWith('FBP: INVALID_SWAP_FEE')
-		await expect(createPair(TEST_ADDRESSES, 40, 24)).to.be.revertedWith('FBP: INVALID_SWAP_FEE')
-		await expect(createPair(TEST_ADDRESSES, 40, 0)).to.be.revertedWith('FBP: INVALID_SWAP_FEE')
+		], 50, 30)).to.be.revertedWith('FLP: ZERO_ADDRESS')
+		await expect(createPair(TEST_ADDRESSES, 0, 30)).to.be.revertedWith('FLP: INVALID_TOKEN_WEIGHT')
+		await expect(createPair(TEST_ADDRESSES, 100, 30)).to.be.revertedWith('FLP: INVALID_TOKEN_WEIGHT')
+		await expect(createPair(TEST_ADDRESSES, 99, 30)).to.be.revertedWith('FLP: INVALID_TOKEN_WEIGHT')
+		await expect(createPair(TEST_ADDRESSES, 51, 30)).to.be.revertedWith('FLP: INVALID_TOKEN_WEIGHT')
+		await expect(createPair(TEST_ADDRESSES, 40, 0)).to.be.revertedWith('FLP: INVALID_SWAP_FEE')
+		await expect(createPair(TEST_ADDRESSES, 40, 20000)).to.be.revertedWith('FLP: INVALID_SWAP_FEE')
+		await expect(createPair(TEST_ADDRESSES, 40, 200004)).to.be.revertedWith('FLP: INVALID_SWAP_FEE')
+		await expect(createPair(TEST_ADDRESSES, 40, 0)).to.be.revertedWith('FLP: INVALID_SWAP_FEE')
 	})
 
 	it('createPair:reverse', async () => {
@@ -105,14 +105,14 @@ describe('FireBirdFactory', () => {
 	})
 
 	it('setFeeTo', async () => {
-		await expect(factory.connect(other).setFeeTo(other.address)).to.be.revertedWith('FBP: FORBIDDEN')
+		await expect(factory.connect(other).setFeeTo(other.address)).to.be.revertedWith('FLP: FORBIDDEN')
 		await factory.setFeeTo(wallet.address)
 		expect(await factory.feeTo()).to.eq(wallet.address)
 	})
 	it('setProtocolFee', async () => {
-		await expect(factory.connect(other).setProtocolFee(1)).to.be.revertedWith('FBP: FORBIDDEN')
-		await expect(factory.setProtocolFee(1999)).to.be.revertedWith('FBP: Invalid Protocol fee')
-		await expect(factory.setProtocolFee(100001)).to.be.revertedWith('FBP: Invalid Protocol fee')
+		await expect(factory.connect(other).setProtocolFee(1)).to.be.revertedWith('FLP: FORBIDDEN')
+		await expect(factory.setProtocolFee(1999)).to.be.revertedWith('FLP: Invalid Protocol fee')
+		await expect(factory.setProtocolFee(100001)).to.be.revertedWith('FLP: Invalid Protocol fee')
 		await factory.setProtocolFee(10000)
 		expect(await factory.protocolFee()).to.eq(10000)
 		await factory.setProtocolFee(20000)
@@ -126,9 +126,9 @@ describe('FireBirdFactory', () => {
 	})
 
 	it('setFeeToSetter', async () => {
-		await expect(factory.connect(other).setFeeToSetter(other.address)).to.be.revertedWith('FBP: FORBIDDEN')
+		await expect(factory.connect(other).setFeeToSetter(other.address)).to.be.revertedWith('FLP: FORBIDDEN')
 		await factory.setFeeToSetter(other.address)
 		expect(await factory.feeToSetter()).to.eq(other.address)
-		await expect(factory.setFeeToSetter(wallet.address)).to.be.revertedWith('FBP: FORBIDDEN')
+		await expect(factory.setFeeToSetter(wallet.address)).to.be.revertedWith('FLP: FORBIDDEN')
 	})
 })

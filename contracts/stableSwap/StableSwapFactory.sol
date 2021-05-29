@@ -101,29 +101,29 @@ contract StableSwapFactory is IStableSwapFactory {
     }
 
     function setSwapCreator(ISwapCreator _swapCreator) external {
-        require(msg.sender == feeToSetter, 'FBP: FORBIDDEN');
+        require(msg.sender == feeToSetter, 'FLP: FORBIDDEN');
         swapCreator = _swapCreator;
     }
 
     function setFeeTo(address _feeTo) external override {
-        require(msg.sender == feeToSetter, 'FBP: FORBIDDEN');
+        require(msg.sender == feeToSetter, 'FLP: FORBIDDEN');
         feeTo = _feeTo;
         emit SetFeeTo(_feeTo);
     }
 
     function setFeeToSetter(address _feeToSetter) external override {
-        require(msg.sender == feeToSetter, 'FBP: FORBIDDEN');
+        require(msg.sender == feeToSetter, 'FLP: FORBIDDEN');
         feeToSetter = _feeToSetter;
     }
 
     function setFeeToken(address _token) external override {
-        require(msg.sender == feeToSetter, 'FBP: FORBIDDEN');
+        require(msg.sender == feeToSetter, 'FLP: FORBIDDEN');
         feeToken = _token;
         emit SetFeeToken(_token);
     }
 
     function setFeeAmount(uint _feeAmount) external override {
-        require(msg.sender == feeToSetter, 'FBP: FORBIDDEN');
+        require(msg.sender == feeToSetter, 'FLP: FORBIDDEN');
         feeAmount = _feeAmount;
         emit SetFeeAmount(_feeAmount);
     }

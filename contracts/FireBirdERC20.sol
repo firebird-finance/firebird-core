@@ -6,8 +6,8 @@ import './libraries/SafeMath.sol';
 contract FireBirdERC20 is IFireBirdERC20 {
     using SafeMath for uint;
 
-    string public name;
-    string public symbol;
+    string public constant name = 'FireBird Liquidity Provider';
+    string public constant symbol = 'FLP';
     uint8 public constant decimals = 18;
     uint  public totalSupply;
     mapping(address => uint) public balanceOf;
@@ -19,19 +19,14 @@ contract FireBirdERC20 is IFireBirdERC20 {
     mapping(address => uint) public nonces;
 
     constructor() public {
-    }
-
-    function initialize(string memory _name, string memory _symbol) internal {
-        name = _name;
-        symbol = _symbol;
         uint chainId;
         assembly {
-            chainId := chainid()
+            chainId := chainid
         }
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'),
-                keccak256(bytes(_name)),
+                keccak256(bytes(name)),
                 keccak256(bytes('1')),
                 chainId,
                 address(this)
@@ -81,7 +76,7 @@ contract FireBirdERC20 is IFireBirdERC20 {
     }
 
     function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
-        require(deadline >= block.timestamp, 'FBP: EXPIRED');
+        require(deadline >= block.timestamp, 'FLP: EXPIRED');
         bytes32 digest = keccak256(
             abi.encodePacked(
                 '\x19\x01',
@@ -90,7 +85,7 @@ contract FireBirdERC20 is IFireBirdERC20 {
             )
         );
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, 'FBP: INVALID_SIGNATURE');
+        require(recoveredAddress != address(0) && recoveredAddress == owner, 'FLP: INVALID_SIGNATURE');
         _approve(owner, spender, value);
     }
 }
