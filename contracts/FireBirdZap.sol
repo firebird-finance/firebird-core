@@ -264,8 +264,8 @@ contract FireBirdZap is ReentrancyGuard {
             (uint256 res0, uint256 res1,) = IFireBirdPair(pair).getReserves();
             uint reserveIn = tokenIn == pairToken0 ? res0 : res1;
             return Babylonian
-            .sqrt(reserveIn.mul(userIn.mul(3988000) + reserveIn.mul(3988009)))
-            .sub(reserveIn.mul(1997)) / 1994;
+                .sqrt(reserveIn.mul(userIn.mul(3988000) + reserveIn.mul(3988009)))
+                .sub(reserveIn.mul(1997)) / 1994;
         } else {
             uint256 otherWeight = tokenIn == pairToken0 ? uint(tokenWeight1) : uint(tokenWeight0);
             return userIn.mul(otherWeight).div(100);
@@ -334,12 +334,7 @@ contract FireBirdZap is ReentrancyGuard {
         // Lp
         if (pair.token0() == WBNB || pair.token1() == WBNB) {
             address token = pair.token0() == WBNB ? pair.token1() : pair.token0();
-            uint swapValue;
-            {
-                (uint32 tokenWeight0, uint32 tokenWeight1,) = fireBirdFactory.getWeightsAndSwapFee(address(pair));
-                uint tokenWeight = pair.token0() == WBNB ? uint(tokenWeight1) : uint(tokenWeight0);
-                swapValue = amount.mul(tokenWeight).div(100);
-            }
+            uint swapValue = calculateSwapInAmount(lp, WBNB, amount, pair.token0());
             uint tokenAmount = _swapBNBForToken(token, swapValue, address(this), lp);
             require(tokenAmount >= _minTokenB, "Zap: Insufficient Receive Amount");
 
