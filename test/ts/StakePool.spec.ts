@@ -5,7 +5,7 @@ import {SignerWithAddress} from "hardhat-deploy-ethers/dist/src/signer-with-addr
 import {
 	ADDRESS_ZERO,
 	getLatestBlock,
-	getLatestBlockNumber,
+	getLatestBlockNumber, getLatestBlockTime,
 	maxUint256,
 	mineBlocks, mineBlockTimeStamp,
 	toWei
@@ -24,6 +24,7 @@ import {
 } from "../../typechain";
 import {ParamType} from "@ethersproject/abi/src.ts/fragments";
 import {encodePoolInfo} from "./StakePoolController.spec";
+
 function encodeParameters(types: Array<string | ParamType>, values: Array<any>) {
 	const abi = new ethers.utils.AbiCoder();
 	return abi.encode(types, values);
@@ -56,11 +57,11 @@ describe('StakePool', () => {
 		stakePoolCreator = fixture.stakePoolCreator;
 		version = await stakePoolCreator.version();
 
-		rewardToken1 = await new TTokenFactory(wallet).deploy("TEST1", "TEST1",toWei(10000));
+		rewardToken1 = await new TTokenFactory(wallet).deploy("TEST1", "TEST1", toWei(10000));
 		rewardToken2 = await new TTokenFactory(wallet).deploy("TEST2", "TEST2", toWei(10000));
 		pair = fixture.stakeToken;
 		await stakePoolController.addStakePoolCreator(stakePoolCreator.address);
-		let latestBlockNumber = await getLatestBlockNumber(ethers);
+		let latestBlockTime = await getLatestBlockTime(ethers);
 		await rewardToken1.approve(stakePoolController.address, maxUint256);
 		await rewardToken2.approve(stakePoolController.address, maxUint256);
 		if (rewardRebaser != ADDRESS_ZERO) {
@@ -72,16 +73,16 @@ describe('StakePool', () => {
 		let poolRewardInfo = encodePoolInfo({
 			rewardRebaser: rewardRebaser,
 			rewardMultiplier: rewardMultiplier,
-			startBlock: latestBlockNumber + 1,
-			endRewardBlock: latestBlockNumber + 60,
-			rewardPerBlock: toWei(0.1),
+			startTime: latestBlockTime + 1,
+			endRewardTime: latestBlockTime + 3600 * 24 * 20,
+			rewardPerSecond: toWei(0.1),
 			lockRewardPercent: 0,
-			startVestingBlock: 0,
-			endVestingBlock: 0,
+			startVestingTime: 0,
+			endVestingTime: 0,
 			unstakingFrozenTime: 0,
 		});
 
-		await stakePoolController.connect(wallet).create(version, pair.address, rewardToken1.address, toWei(100), 3600 * 48, poolRewardInfo);
+		await stakePoolController.connect(wallet).create(version, pair.address, rewardToken1.address, toWei(100), 3600 * 24, poolRewardInfo);
 		const stakePoolAddress = await stakePoolController.allStakePools(0);
 		stakePool = StakePoolFactory.connect(stakePoolAddress, wallet);
 		rewardFund = StakePoolRewardFundFactory.connect(await stakePool.rewardFund(), wallet);
@@ -99,7 +100,7 @@ describe('StakePool', () => {
 			expect(await rewardFund.stakePool()).to.eq(stakePool.address)
 			expect(await rewardToken1.balanceOf(rewardFund.address)).to.eq(toWei(100))
 			expect(await timelock.admin()).to.eq(wallet.address)
-			expect(await timelock.delay()).to.eq(3600 * 48)
+			expect(await timelock.delay()).to.eq(3600 * 24)
 		})
 		it('stake', async () => {
 			await expect(stakePool.stake(toWei(1))).revertedWith("TransferHelper: TRANSFER_FROM_FAILED")
@@ -142,14 +143,14 @@ describe('StakePool', () => {
 		it('emergencyWithdraw', async () => {
 			await pair.approve(stakePool.address, toWei(3))
 			await stakePool.stake(toWei(3))
-			await expect(stakePool.emergencyWithdraw()).to.revertedWith("StakePool: Not allow emergencyWithdraw")
-			await stakePoolController.setAllowEmergencyWithdrawStakePool(stakePool.address, true)
+			// await expect(stakePool.emergencyWithdraw()).to.revertedWith("StakePool: Not allow emergencyWithdraw")
+			// await stakePoolController.setAllowEmergencyWithdrawStakePool(stakePool.address, true)
 			await expect(async () => stakePool.emergencyWithdraw())
 				.changeTokenBalance(pair, wallet, toWei("3"))
 			expect((await stakePool.userInfo(wallet.address)).amount).to.eq(toWei("0"));
 		})
 		it('failed recoverRewardToken', async () => {
-			const eta = (await getLatestBlock(ethers)).timestamp + 3600 * 24 * 4;
+			const eta = (await getLatestBlock(ethers)).timestamp + 3600 * 24 * 2;
 			let signature = "recoverRewardToken(address,uint256,address)";
 			let data = encodeParameters(['address', 'address', 'uint256'], [rewardToken1.address, wallet.address, 10]);
 			await expect(rewardFund.recoverRewardToken(rewardToken1.address, wallet.address, 10)).revertedWith("StakePoolRewardFund: !timelock");
@@ -160,46 +161,54 @@ describe('StakePool', () => {
 			expect(await stakePool.allowRecoverRewardToken(rewardToken1.address)).to.eq(false)
 			await expect(timelock.executeTransaction(rewardFund.address, 0, signature, data, eta)).revertedWith("Timelock::executeTransaction: Transaction execution reverted.");
 		})
-		// it('success recoverRewardToken', async () => {
-		// 	const eta = (await getLatestBlock(ethers)).timestamp + 3600 * 24 * 4;
-		// 	let signature = "recoverRewardToken(address,uint256,address)";
-		// 	let data = encodeParameters(['address', 'uint256', 'address'], [rewardToken1.address, 10, wallet.address]);
-		// 	await timelock.queueTransaction(rewardFund.address, 0, signature, data, eta)
-		// 	let {endRewardBlock} = await stakePool.rewardPoolInfo(0);
-		// 	let blocks = (endRewardBlock.toNumber() + 6528 * 30) - (await getLatestBlock(ethers)).number
-		// 	await mineBlocks(ethers, blocks)
-		// 	await mineBlockTimeStamp(ethers, eta)
-		// 	await expect(timelock.executeTransaction(rewardFund.address, 0, signature, data, eta))
-		// 		.to.emit(rewardToken1, "Transfer").withArgs(rewardFund.address, wallet.address, 10);
-		// })
+		it('success recoverRewardToken', async () => {
+			const eta = (await getLatestBlock(ethers)).timestamp + 3600 * 24 * 24;
+			let signature = "recoverRewardToken(address,address,uint256)";
+			let data = encodeParameters(['address', 'address', 'uint256'], [rewardToken1.address, wallet.address, 2]);
+			await timelock.queueTransaction(rewardFund.address, 0, signature, data, eta)
+			await mineBlockTimeStamp(ethers, eta)
+			expect(await stakePool.allowRecoverRewardToken(rewardToken1.address)).to.eq(true)
+			await expect(timelock.executeTransaction(rewardFund.address, 0, signature, data, eta))
+				.to.emit(rewardToken1, "Transfer").withArgs(rewardFund.address, wallet.address, 2);
+		})
+		it('success recoverAllRewardToken', async () => {
+			const eta = (await getLatestBlock(ethers)).timestamp + 3600 * 24 * 24;
+			let signature = "recoverAllRewardToken(address,address)";
+			let data = encodeParameters(['address', 'address'], [rewardToken1.address, wallet.address]);
+			await timelock.queueTransaction(rewardFund.address, 0, signature, data, eta)
+			await mineBlockTimeStamp(ethers, eta)
+			expect(await stakePool.allowRecoverRewardToken(rewardToken1.address)).to.eq(true)
+			await expect(timelock.executeTransaction(rewardFund.address, 0, signature, data, eta))
+				.to.emit(rewardToken1, "Transfer").withArgs(rewardFund.address, wallet.address, toWei(100));
+		})
 
 		it('updateRewardPool', async () => {
 			let rewardPoolInfo = await stakePool.rewardPoolInfo(0);
-			const eta = (await getLatestBlock(ethers)).timestamp + 3600 * 24 * 4;
+			const eta = (await getLatestBlock(ethers)).timestamp + 3600 * 24 * 2;
 			let signature = "updateRewardPool(uint8,uint256,uint256)";
-			let newEndBlocks = rewardPoolInfo.endRewardBlock.add(10);
+			let newEndBlocks = rewardPoolInfo.endRewardTime.add(100);
 			let data = encodeParameters(['uint8', 'uint256', 'uint256'], [0, newEndBlocks, toWei(0.2)]);
 			await timelock.queueTransaction(stakePool.address, 0, signature, data, eta)
 			await mineBlockTimeStamp(ethers, eta)
 			await timelock.executeTransaction(stakePool.address, 0, signature, data, eta)
 			rewardPoolInfo = await stakePool.rewardPoolInfo(0);
-			expect(rewardPoolInfo.endRewardBlock).to.eq(newEndBlocks)
-			expect(rewardPoolInfo.rewardPerBlock).to.eq(toWei(0.2))
+			expect(rewardPoolInfo.endRewardTime).to.eq(newEndBlocks)
+			expect(rewardPoolInfo.rewardPerSecond).to.eq(toWei(0.2))
 		})
 
 		it('stopRewardPool', async () => {
 			let rewardPoolInfo = await stakePool.rewardPoolInfo(0);
 			const eta = (await getLatestBlock(ethers)).timestamp + 3600 * 24 * 4;
 			let signature = "stopRewardPool(uint8)";
-			let newEndBlocks = rewardPoolInfo.endRewardBlock.add(10);
+			let newEndBlocks = rewardPoolInfo.endRewardTime.add(10);
 			let data = encodeParameters(['uint8'], [0]);
 			await timelock.queueTransaction(stakePool.address, 0, signature, data, eta)
 			await mineBlockTimeStamp(ethers, eta)
 			await timelock.executeTransaction(stakePool.address, 0, signature, data, eta)
 			rewardPoolInfo = await stakePool.rewardPoolInfo(0);
-			const latestBlock = await getLatestBlockNumber(ethers)
-			expect(rewardPoolInfo.endRewardBlock).to.eq(latestBlock)
-			expect(rewardPoolInfo.rewardPerBlock).to.eq(0)
+			const latestBlock = await getLatestBlockTime(ethers)
+			expect(rewardPoolInfo.endRewardTime).to.eq(latestBlock)
+			expect(rewardPoolInfo.rewardPerSecond).to.eq(0)
 		})
 
 	})
@@ -215,7 +224,7 @@ describe('StakePool', () => {
 			await mineBlocks(ethers, 1);
 			let rewardPoolInfo = await stakePool.rewardPoolInfo(0);
 			expect(await stakePool.getRewardRebase(0, rewardPoolInfo.rewardToken, toWei(0.1))).to.eq(toWei(0.2));
-			expect(await stakePool["getRewardPerBlock(uint8)"](0)).to.eq(toWei(0.2));
+			expect(await stakePool["getRewardPerSecond(uint8)"](0)).to.eq(toWei(0.2));
 			expect(await stakePool.pendingReward(0, wallet.address)).to.eq(toWei(0.2));
 			await mineBlocks(ethers, 1);
 			expect(await stakePool.pendingReward(0, wallet.address)).to.eq(toWei(0.4));
@@ -255,7 +264,7 @@ describe('StakePool', () => {
 			await stakePool.stake(toWei(1))
 			await mineBlocks(ethers, 1);
 			expect(await stakePool.getRewardMultiplier(0, 1, 2, toWei(0.1))).to.eq(toWei(0.2));
-			expect(await stakePool["getRewardPerBlock(uint8)"](0)).to.eq(toWei(0.2));
+			expect(await stakePool["getRewardPerSecond(uint8)"](0)).to.eq(toWei(0.2));
 			expect(await stakePool.pendingReward(0, wallet.address)).to.eq(toWei(0.2));
 			await mineBlocks(ethers, 1);
 			expect(await stakePool.pendingReward(0, wallet.address)).to.eq(toWei(0.4));
@@ -285,10 +294,11 @@ describe('StakePool', () => {
 	});
 	describe('AddRewardPool', () => {
 		async function addRewardPool() {
-			let latestBlockNumber = await getLatestBlockNumber(ethers);
-			const eta = (await getLatestBlock(ethers)).timestamp + 3600 * 24 * 4;
+			const eta = (await getLatestBlock(ethers)).timestamp + 3600 * 24 * 2;
+			let latestBlockTime = eta + 1;
+
 			let signature = "addRewardPool(address,address,address,uint256,uint256,uint256,uint256,uint256,uint256)";
-			let data = encodeParameters(['address', 'address', 'address', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'], [rewardToken2.address, ADDRESS_ZERO, ADDRESS_ZERO, latestBlockNumber + 1, latestBlockNumber + 60, toWei(0.2), 0, 0, 0]);
+			let data = encodeParameters(['address', 'address', 'address', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'], [rewardToken2.address, ADDRESS_ZERO, ADDRESS_ZERO, latestBlockTime + 1, latestBlockTime + 3600, toWei(0.2), 0, 0, 0]);
 			await timelock.queueTransaction(stakePool.address, 0, signature, data, eta)
 			await mineBlockTimeStamp(ethers, eta)
 			await timelock.executeTransaction(stakePool.address, 0, signature, data, eta);
