@@ -32,11 +32,18 @@ contract StakePoolRewardFund is IStakePoolRewardFund {
         return IStakePool(stakePool).allowRecoverRewardToken(_token);
     }
 
+    function recoverAllRewardToken(
+        address _token,
+        address _to
+    ) external {
+        recoverRewardToken(_token, _to, IERC20(address(_token)).balanceOf(address(this)));
+    }
+
     function recoverRewardToken(
         address _token,
         address _to,
         uint256 _amount
-    ) external {
+    ) public {
         require(msg.sender == timelock, "StakePoolRewardFund: !timelock");
         require(allowRecoverRewardToken(_token), "StakePoolRewardFund: not allow recover reward token");
         TransferHelper.safeTransfer(_token, _to, _amount);
