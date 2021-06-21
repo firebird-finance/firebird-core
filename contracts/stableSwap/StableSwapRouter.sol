@@ -120,13 +120,17 @@ contract StableSwapRouter {
         for (uint8 i = 0; i < pool.getTokenLength(); i++) {
             IERC20 coin = pool.getToken(i);
             amounts[i] = coin.balanceOf(address(this));
-            coin.safeTransfer(msg.sender, amounts[i]);
+            if (amounts[i] > 0) {
+                coin.safeTransfer(msg.sender, amounts[i]);
+            }
         }
         base_amounts = new uint256[](basePool.getTokenLength());
         for (uint8 i = 0; i < basePool.getTokenLength(); i++) {
             IERC20 coin = basePool.getToken(i);
             base_amounts[i] = coin.balanceOf(address(this));
-            coin.safeTransfer(msg.sender, base_amounts[i]);
+            if (base_amounts[i] > 0) {
+                coin.safeTransfer(msg.sender, base_amounts[i]);
+            }
         }
     }
 

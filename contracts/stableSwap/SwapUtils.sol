@@ -990,11 +990,13 @@ library SwapUtils {
 
             // ((currentBalance * currentFee) + (toMint * defaultWithdrawFee)) * FEE_DENOMINATOR /
             // ((toMint + currentBalance) * defaultWithdrawFee)
-            self.withdrawFeeMultiplier[user] = currentBalance
-                .mul(currentFee)
-                .add(toMint.mul(self.defaultWithdrawFee))
-                .mul(FEE_DENOMINATOR)
-                .div(toMint.add(currentBalance).mul(self.defaultWithdrawFee));
+            if (toMint.add(currentBalance).mul(self.defaultWithdrawFee) != 0) {
+                self.withdrawFeeMultiplier[user] = currentBalance
+                    .mul(currentFee)
+                    .add(toMint.mul(self.defaultWithdrawFee))
+                    .mul(FEE_DENOMINATOR)
+                    .div(toMint.add(currentBalance).mul(self.defaultWithdrawFee));
+            }
         }
         self.depositTimestamp[user] = block.timestamp;
     }
