@@ -230,35 +230,6 @@ describe("FireBirdZap", () => {
                 await pair.approve(zap.address, MaxUint256);
             });
 
-            it("zap out to pair", async () => {
-                await getBalanceBefore(pair);
-                await zap.zapOutToPair(pair.address, toWei(1));
-                await getBalanceAfter(pair);
-
-                expect(wallet0Before).is.lt(wallet0After);
-                expect(wallet1Before).is.lt(wallet1After);
-                expect(walletPairBefore.sub(walletPairAfter)).is.eq(toWei(1));
-                expect(zap0After).is.eq(zap0Before);
-                expect(zap1After).is.eq(zap1Before);
-                expect(zapPairAfter).is.eq(zapPairBefore);
-            });
-
-            it("zap out uni to pair", async () => {
-                await addLiquidityUniPair(toWei(100), toWei(100));
-                await pairUni.approve(zap.address, maxUint256);
-
-                await getBalanceBefore(pairUni);
-                await zap.zapOutToPair(pairUni.address, toWei(1));
-                await getBalanceAfter(pairUni);
-
-                expect(wallet2Before).is.lt(wallet2After);
-                expect(wallet1Before).is.lt(wallet1After);
-                expect(walletPairBefore.sub(walletPairAfter)).is.eq(toWei(1));
-                expect(zap0After).is.eq(zap0Before);
-                expect(zap1After).is.eq(zap1Before);
-                expect(zapPairAfter).is.eq(zapPairBefore);
-            });
-
             it("zap out to token", async () => {
                 await getBalanceBefore(pair);
                 await zap.zapOut(pair.address, toWei(1), token0.address, 0);
@@ -509,19 +480,6 @@ describe("FireBirdZap", () => {
                 await WETHPair.approve(zap.address, MaxUint256);
             });
 
-            it("zap out to pair", async () => {
-                await getBalanceBefore(WETHPair);
-                await zap.zapOutToPair(WETHPair.address, toWei(1));
-                await getBalanceAfter(WETHPair);
-
-                expect(ethBefore).is.lt(ethAfter);
-                expect(ethPartnerBefore).is.lt(ethPartnerAfter);
-                expect(walletPairBefore.sub(walletPairAfter)).is.eq(toWei(1));
-                expect(zapETHAfter).is.eq(zapETHBefore);
-                expect(zapPartnerAfter).is.eq(zapPartnerBefore);
-                expect(zapPairAfter).is.eq(zapPairBefore);
-            });
-
             it("zap out to token", async () => {
                 await getBalanceBefore(WETHPair);
                 await zap.zapOut(WETHPair.address, toWei(1), WETHPartner.address, 0);
@@ -616,7 +574,7 @@ describe("FireBirdZap", () => {
 
                 await getBalanceBefore(WETHPair);
                 wethBalanceBefore = await WETH.balanceOf(wallet.address);
-                await zap.withdrawToken([WETH.address, WETHPartner.address, ADDRESS_ZERO], wallet.address);
+                await zap.withdrawToken([WETH.address, WETHPartner.address, BNBAddress], wallet.address);
                 wethBalanceAfter = await WETH.balanceOf(wallet.address);
                 await getBalanceAfter(WETHPair);
 

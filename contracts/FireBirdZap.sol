@@ -33,6 +33,7 @@ contract FireBirdZap is ReentrancyGuard {
     event ZapIn(address indexed sender, address from, uint256 amtFrom, address pool, uint256 amtLp);
     event ZapOut(address indexed sender, address pool, uint256 amtLp, address to, uint256 amtTo);
     event Withdraw(address indexed token, uint256 amount, address to);
+    event LogGovernance(address governance);
 
     receive() external payable {
         require(msg.sender != tx.origin, "Zap: Do not send ETH directly");
@@ -94,31 +95,6 @@ contract FireBirdZap is ReentrancyGuard {
     }
 
     // _from: must be a pair lp
-    function zapOutToPair(address _from, uint amount) public nonReentrant returns (uint256 amountA, uint256 amountB) {
-        IERC20(_from).safeTransferFrom(msg.sender, address(this), amount);
-        _approveTokenIfNeeded(_from);
-
-        IFireBirdPair pair = IFireBirdPair(_from);
-        address token0 = pair.token0();
-        address token1 = pair.token1();
-        bool isfireBirdPair = fireBirdFactory.isPair(_from);
-
-        if (token0 == WBNB || token1 == WBNB) {
-            if (isfireBirdPair) {
-                (amountA, amountB) = fireBirdRouter.removeLiquidityETH(_from, token0 != WBNB ? token0 : token1, amount, 1, 1, msg.sender, block.timestamp);
-            } else {
-                (amountA, amountB) = uniRouter.removeLiquidityETH(token0 != WBNB ? token0 : token1, amount, 1, 1, msg.sender, block.timestamp);
-            }
-        } else {
-            if (isfireBirdPair) {
-                (amountA, amountB) = fireBirdRouter.removeLiquidity(_from, token0, token1, amount, 1, 1, msg.sender, block.timestamp);
-            } else {
-                (amountA, amountB) = uniRouter.removeLiquidity(token0, token1, amount, 1, 1, msg.sender, block.timestamp);
-            }
-        }
-    }
-
-    // _from: must be a pair lp
     // _toToken: must be in lp
     function zapOut(address _from, uint amount, address _toToken, uint256 _minTokensRec) public nonReentrant returns (uint256) {
         IERC20(_from).safeTransferFrom(msg.sender, address(this), amount);
@@ -162,28 +138,6 @@ contract FireBirdZap is ReentrancyGuard {
 
         emit ZapOut(msg.sender, _from, amount, _toToken, tokenBought);
         return tokenBought;
-    }
-
-    function zapOutToPairWithPermit(
-        address _from,
-        uint256 _amount,
-        uint256 _approvalAmount,
-        uint256 _deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external returns (uint256 amountA, uint256 amountB) {
-        // permit
-        IFireBirdPair(_from).permit(
-            msg.sender,
-            address(this),
-            _approvalAmount,
-            _deadline,
-            v,
-            r,
-            s
-        );
-        (amountA, amountB) = zapOutToPair(_from, _amount);
     }
 
     function zapOutWithPermit(
@@ -454,19 +408,19 @@ contract FireBirdZap is ReentrancyGuard {
 
     function withdrawTokenAmount(address token, address to, uint256 amount) external onlyGovernance {
         require(to != address(0), "Zap: Invalid Receiver Address");
-        IERC20(token).transfer(to, amount);
+        IERC20(token).safeTransfer(to, amount);
         emit Withdraw(token, amount, to);
     }
 
     function _withdraw(address _token, address _to) internal {
-        if (_token == address(0)) {
+        if (_token == BNB_ADDRESS) {
             TransferHelper.safeTransferETH(_to, address(this).balance);
             emit Withdraw(_token, address(this).balance, _to);
             return;
         }
 
         uint256 _balance = IERC20(_token).balanceOf(address(this));
-        IERC20(_token).transfer(_to, _balance);
+        IERC20(_token).safeTransfer(_to, _balance);
         emit Withdraw(_token, _balance, _to);
     }
 
@@ -480,6 +434,7 @@ contract FireBirdZap is ReentrancyGuard {
 
     function setGovernance(address _governance) external onlyGovernance {
         governance = _governance;
+        emit LogGovernance(governance);
     }
 
     function setFireBirdPairs(address _input, address _output, address [] memory _pair) external onlyGovernance {
