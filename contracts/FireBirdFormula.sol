@@ -586,16 +586,17 @@ contract FireBirdFormula is IFireBirdFormula {
         uint32 tokenWeightB,
         uint32 swapFee
     ) {
-        address token0 = IFireBirdPair(pair).token0();
         (uint reserve0, uint reserve1,) = IFireBirdPair(pair).getReserves();
         uint32 tokenWeight0;
         uint32 tokenWeight1;
         (tokenWeight0, tokenWeight1, swapFee) = getFactoryWeightsAndSwapFee(factory, pair);
 
-        if (tokenA == token0) {
+        if (tokenA == IFireBirdPair(pair).token0()) {
             (tokenB, reserveA, reserveB, tokenWeightA, tokenWeightB) = (IFireBirdPair(pair).token1(), reserve0, reserve1, tokenWeight0, tokenWeight1);
+        } else if (tokenA == IFireBirdPair(pair).token1()) {
+            (tokenB, reserveA, reserveB, tokenWeightA, tokenWeightB) = (IFireBirdPair(pair).token0(), reserve1, reserve0, tokenWeight1, tokenWeight0);
         } else {
-            (tokenB, reserveA, reserveB, tokenWeightA, tokenWeightB) = (token0, reserve1, reserve0, tokenWeight1, tokenWeight0);
+            revert("FireBirdFormula: Invalid tokenA");
         }
     }
     /**
