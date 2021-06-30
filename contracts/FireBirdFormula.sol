@@ -565,16 +565,17 @@ contract FireBirdFormula is IFireBirdFormula {
         uint32 tokenWeightB,
         uint32 swapFee
     ) {
-        address token0 = IFireBirdPair(pair).token0();
         (uint reserve0, uint reserve1,) = IFireBirdPair(pair).getReserves();
         uint32 tokenWeight0;
         uint32 tokenWeight1;
         (tokenWeight0, tokenWeight1, swapFee) = getWeightsAndSwapFee(pair);
 
-        if (tokenA == token0) {
+        if (tokenA == IFireBirdPair(pair).token0()) {
             (tokenB, reserveA, reserveB, tokenWeightA, tokenWeightB) = (IFireBirdPair(pair).token1(), reserve0, reserve1, tokenWeight0, tokenWeight1);
+        } else if (tokenA == IFireBirdPair(pair).token1()) {
+            (tokenB, reserveA, reserveB, tokenWeightA, tokenWeightB) = (IFireBirdPair(pair).token0(), reserve1, reserve0, tokenWeight1, tokenWeight0);
         } else {
-            (tokenB, reserveA, reserveB, tokenWeightA, tokenWeightB) = (token0, reserve1, reserve0, tokenWeight1, tokenWeight0);
+            revert("FireBirdFormula: Invalid tokenA");
         }
     }
 
@@ -800,14 +801,16 @@ contract FireBirdFormula is IFireBirdFormula {
     }
 
     function getReserves(address pair, address tokenA, address tokenB) external view override returns (uint reserveA, uint reserveB) {
-        (address token0,) = sortTokens(tokenA, tokenB);
+        (address token0, address token1) = sortTokens(tokenA, tokenB);
         (uint reserve0, uint reserve1,) = IFireBirdPair(pair).getReserves();
+        require(token0 == IFireBirdPair(pair).token0() && token1 == IFireBirdPair(pair).token1(), 'FireBirdFormula: Invalid token');
         (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
     }
 
     function getOtherToken(address pair, address tokenA) external view override returns (address tokenB) {
         address token0 = IFireBirdPair(pair).token0();
         address token1 = IFireBirdPair(pair).token1();
+        require(token0 == tokenA || token1 == tokenA, 'FireBirdFormula: Invalid tokenA');
         tokenB = token0 == tokenA ? token1 : token0;
     }
     // given some amount of an asset and pair reserves, returns an equivalent amount of the other asset
