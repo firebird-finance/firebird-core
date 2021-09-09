@@ -604,7 +604,7 @@ contract FireBirdFormula is IFireBirdFormula {
          * @dev given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset,
          *
          * Formula:
-         * return = reserveOut * (1 - (reserveIn / (reserveIn + amountIn * (10000 - swapFee))) ^ (tokenWeightIn / tokenWeightOut))
+         * return = reserveOut * (1 - (reserveIn * 10000 / (reserveIn * 10000 + amountIn * (10000 - swapFee))) ^ (tokenWeightIn / tokenWeightOut))
          *
          * @param amountIn                  source reserve amount
          * @param reserveIn    source reserve balance
