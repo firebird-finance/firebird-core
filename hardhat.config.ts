@@ -7,7 +7,6 @@ import 'hardhat-deploy';
 import 'hardhat-deploy-ethers';
 import 'hardhat-contract-sizer';
 import 'hardhat-gas-reporter';
-import 'hardhat-abi-exporter';
 import '@nomiclabs/hardhat-etherscan';
 
 import {HardhatNetworkAccountsUserConfig} from 'hardhat/types/config';
@@ -85,8 +84,8 @@ const config: HardhatUserConfig = {
             },
         ],
         overrides: {
-            "contracts/zapper/FireBirdZap.sol": {
-                version: '0.6.12',
+            "contracts/FireBirdRouter.sol": {
+                version: '0.7.6',
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -102,7 +101,7 @@ const config: HardhatUserConfig = {
             tags: process.env.DEFAULT_TAG ? process.env.DEFAULT_TAG.split(',') : ['local'],
             live: false,
             saveDeployments: false,
-            allowUnlimitedContractSize: true,
+            allowUnlimitedContractSize: false,
             chainId: 1,
             accounts,
         },

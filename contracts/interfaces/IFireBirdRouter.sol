@@ -7,18 +7,11 @@ interface IFireBirdRouter {
         uint amountOut,
         address output
     );
-    struct Swap {
-        address pool;
-        address tokenIn;
-        address tokenOut;
-        uint swapAmount; // tokenInAmount / tokenOutAmount
-        uint limitReturnAmount; // minAmountOut / maxAmountIn
-        uint maxPrice;
-    }
     function factory() external view returns (address);
     function formula() external view returns (address);
 
     function WETH() external view returns (address);
+    function swapFeeReward() external view returns (address);
 
     function addLiquidity(
         address pair,
@@ -49,6 +42,7 @@ interface IFireBirdRouter {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
+        uint8[] calldata dexIds,
         address to,
         uint deadline
     ) external returns (uint[] memory amounts);
@@ -59,24 +53,25 @@ interface IFireBirdRouter {
         uint amountOut,
         uint amountInMax,
         address[] calldata path,
+        uint8[] calldata dexIds,
         address to,
         uint deadline
     ) external returns (uint[] memory amounts);
 
-    function swapExactETHForTokens(address tokenOut, uint amountOutMin, address[] calldata path, address to, uint deadline)
+    function swapExactETHForTokens(address tokenOut, uint amountOutMin, address[] calldata path, uint8[] calldata dexIds, address to, uint deadline)
     external
     payable
     returns (uint[] memory amounts);
 
-    function swapTokensForExactETH(address tokenIn, uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
+    function swapTokensForExactETH(address tokenIn, uint amountOut, uint amountInMax, address[] calldata path, uint8[] calldata dexIds, address to, uint deadline)
     external
     returns (uint[] memory amounts);
 
-    function swapExactTokensForETH(address tokenIn, uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
+    function swapExactTokensForETH(address tokenIn, uint amountIn, uint amountOutMin, address[] calldata path, uint8[] calldata dexIds, address to, uint deadline)
     external
     returns (uint[] memory amounts);
 
-    function swapETHForExactTokens(address tokenOut, uint amountOut, address[] calldata path, address to, uint deadline)
+    function swapETHForExactTokens(address tokenOut, uint amountOut, address[] calldata path, uint8[] calldata dexIds, address to, uint deadline)
     external
     payable
     returns (uint[] memory amounts);
@@ -87,6 +82,7 @@ interface IFireBirdRouter {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
+        uint8[] calldata dexIds,
         address to,
         uint deadline
     ) external;
@@ -95,6 +91,7 @@ interface IFireBirdRouter {
         address tokenOut,
         uint amountOutMin,
         address[] calldata path,
+        uint8[] calldata dexIds,
         address to,
         uint deadline
     ) external payable;
@@ -104,27 +101,11 @@ interface IFireBirdRouter {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
+        uint8[] calldata dexIds,
         address to,
         uint deadline
     ) external;
 
-
-    function multihopBatchSwapExactIn(
-        Swap[][] memory swapSequences,
-        address tokenIn,
-        address tokenOut,
-        uint totalAmountIn,
-        uint minTotalAmountOut,
-        uint deadline
-    )
-    external payable returns (uint totalAmountOut);
-    function multihopBatchSwapExactOut(
-        Swap[][] memory swapSequences,
-        address tokenIn,
-        address tokenOut,
-        uint maxTotalAmountIn,
-        uint deadline
-    ) external payable returns (uint totalAmountIn);
 
     function createPair( address tokenA, address tokenB,uint amountA,uint amountB, uint32 tokenWeightA, uint32 swapFee, address to) external returns (uint liquidity);
     function createPairETH( address token, uint amountToken, uint32 tokenWeight, uint32 swapFee, address to) external payable returns (uint liquidity);

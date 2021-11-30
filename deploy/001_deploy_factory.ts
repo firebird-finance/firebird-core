@@ -6,7 +6,7 @@ import {BigNumber} from "ethers";
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 	const {deployments, getNamedAccounts} = hre;
 	const {deploy, execute} = deployments;
-	const {deployer, governance, uniRouter} = await getNamedAccounts();
+	const {deployer, governance} = await getNamedAccounts();
 
 	const wethAddress = await getWeth(hre);
 
@@ -14,7 +14,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 		contract: "FireBirdFormula",
 		skipIfAlreadyDeployed: true,
 		from: deployer,
-		args: [],
+		args: [deployer],
 		log: true,
 	});
 
@@ -39,14 +39,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 		contract: "FireBirdRouter",
 		skipIfAlreadyDeployed: true,
 		from: deployer,
-		args: [factoty.address, wethAddress],
+		args: [factoty.address, formula.address, wethAddress],
 		log: true,
 	});
 	const zapper = await deploy("FireBirdZap", {
 		contract: "FireBirdZap",
 		skipIfAlreadyDeployed: true,
 		from: deployer,
-		args: [uniRouter, router.address],
+		args: [router.address],
 		log: true,
 	});
 
@@ -60,7 +60,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 	await execute("FireBirdFactory", {from: deployer, log: true}, "setFeeToSetter", governance);
 	await execute("ProtocolFeeRemover", {from: deployer, log: true}, "setReceiver", governance);
 	await execute("ProtocolFeeRemover", {from: deployer, log: true}, "setGovernance", governance);
-	await execute("FireBirdZap", {from: deployer, log: true}, "setGovernance", governance);
 
 
 };

@@ -41,6 +41,7 @@ interface IFireBirdRouter {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
+        uint8[] calldata dexIds,
         address to,
         uint deadline
     ) external returns (uint[] memory amounts);
@@ -51,24 +52,25 @@ interface IFireBirdRouter {
         uint amountOut,
         uint amountInMax,
         address[] calldata path,
+        uint8[] calldata dexIds,
         address to,
         uint deadline
     ) external returns (uint[] memory amounts);
 
-    function swapExactETHForTokens(address tokenOut, uint amountOutMin, address[] calldata path, address to, uint deadline)
+    function swapExactETHForTokens(address tokenOut, uint amountOutMin, address[] calldata path, uint8[] calldata dexIds, address to, uint deadline)
     external
     payable
     returns (uint[] memory amounts);
 
-    function swapTokensForExactETH(address tokenIn, uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
+    function swapTokensForExactETH(address tokenIn, uint amountOut, uint amountInMax, address[] calldata path, uint8[] calldata dexIds, address to, uint deadline)
     external
     returns (uint[] memory amounts);
 
-    function swapExactTokensForETH(address tokenIn, uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
+    function swapExactTokensForETH(address tokenIn, uint amountIn, uint amountOutMin, address[] calldata path, uint8[] calldata dexIds, address to, uint deadline)
     external
     returns (uint[] memory amounts);
 
-    function swapETHForExactTokens(address tokenOut, uint amountOut, address[] calldata path, address to, uint deadline)
+    function swapETHForExactTokens(address tokenOut, uint amountOut, address[] calldata path, uint8[] calldata dexIds, address to, uint deadline)
     external
     payable
     returns (uint[] memory amounts);
@@ -79,6 +81,7 @@ interface IFireBirdRouter {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
+        uint8[] calldata dexIds,
         address to,
         uint deadline
     ) external;
@@ -87,6 +90,7 @@ interface IFireBirdRouter {
         address tokenOut,
         uint amountOutMin,
         address[] calldata path,
+        uint8[] calldata dexIds,
         address to,
         uint deadline
     ) external payable;
@@ -96,6 +100,7 @@ interface IFireBirdRouter {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
+        uint8[] calldata dexIds,
         address to,
         uint deadline
     ) external;

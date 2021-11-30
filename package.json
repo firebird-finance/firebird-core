@@ -43,6 +43,7 @@
         "bignumber.js": "^9.0.1",
         "decimal.js": "^10.2.1",
         "dotenv": "^8.2.0",
+        "ethereumjs-util": "^6.2.0",
         "ethers": "^5.0.19",
         "hardhat": "^2.0.3",
         "hardhat-contract-sizer": "^2.0.2",
@@ -58,8 +59,7 @@
         "solidity-coverage": "^0.7.11",
         "ts-node": "^9.0.0",
         "typechain": "^3.0.0",
-        "typescript": "^4.0.3",
-        "ethereumjs-util": "^6.2.0"
+        "typescript": "^4.0.3"
     },
     "dependencies": {
         "@openzeppelin/contracts": "^3.4.1",

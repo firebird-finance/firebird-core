@@ -6,7 +6,7 @@ pragma solidity >=0.5.16;
 */
 interface IFireBirdFormula {
 
-    function getReserveAndWeights(address pair, address tokenA) external view returns (
+    function getFactoryReserveAndWeights(address factory, address pair, address tokenA, uint8 dexId) external view returns (
         address tokenB,
         uint reserveA,
         uint reserveB,
@@ -14,15 +14,7 @@ interface IFireBirdFormula {
         uint32 tokenWeightB,
         uint32 swapFee
     );
-
-    function getFactoryReserveAndWeights(address factory, address pair, address tokenA) external view returns (
-        address tokenB,
-        uint reserveA,
-        uint reserveB,
-        uint32 tokenWeightA,
-        uint32 tokenWeightB,
-        uint32 swapFee
-    );
+    function getFactoryWeightsAndSwapFee(address factory, address pair, uint8 dexId) external view returns (uint32 tokenWeight0, uint32 tokenWeight1, uint32 swapFee);
 
     function getAmountIn(
         uint amountOut,
@@ -31,8 +23,6 @@ interface IFireBirdFormula {
         uint32 swapFee
     ) external view returns (uint amountIn);
 
-    function getPairAmountIn(address pair, address tokenIn, uint amountOut) external view returns (uint amountIn);
-
     function getAmountOut(
         uint amountIn,
         uint reserveIn, uint reserveOut,
@@ -40,28 +30,13 @@ interface IFireBirdFormula {
         uint32 swapFee
     ) external view returns (uint amountOut);
 
-    function getPairAmountOut(address pair, address tokenIn, uint amountIn) external view returns (uint amountOut);
-
-    function getAmountsIn(
-        address tokenIn,
-        address tokenOut,
-        uint amountOut,
-        address[] calldata path
-    ) external view returns (uint[] memory amounts);
-
     function getFactoryAmountsIn(
         address factory,
         address tokenIn,
         address tokenOut,
         uint amountOut,
-        address[] calldata path
-    ) external view returns (uint[] memory amounts);
-
-    function getAmountsOut(
-        address tokenIn,
-        address tokenOut,
-        uint amountIn,
-        address[] calldata path
+        address[] calldata path,
+        uint8[] calldata dexIds
     ) external view returns (uint[] memory amounts);
 
     function getFactoryAmountsOut(
@@ -69,7 +44,8 @@ interface IFireBirdFormula {
         address tokenIn,
         address tokenOut,
         uint amountIn,
-        address[] calldata path
+        address[] calldata path,
+        uint8[] calldata dexIds
     ) external view returns (uint[] memory amounts);
 
     function ensureConstantValue(uint reserve0, uint reserve1, uint balance0Adjusted, uint balance1Adjusted, uint32 tokenWeight0) external view returns (bool);

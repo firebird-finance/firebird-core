@@ -9,26 +9,62 @@ import './interfaces/IERC20.sol';
 import './interfaces/IFireBirdRouter.sol';
 import './libraries/SafeMath.sol';
 import './interfaces/IWETH.sol';
-contract FireBirdRouter is IFireBirdRouter {
+import "./interfaces/IAggregationExecutor.sol";
+import "./interfaces/ISwapFeeReward.sol";
+import "./libraries/Permitable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract FireBirdRouter is IFireBirdRouter, Ownable, Permitable {
     using SafeMath for uint;
     address public immutable override factory;
     address public immutable override formula;
     address public immutable override WETH;
+    address public override swapFeeReward;
     address private constant ETH_ADDRESS = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
+
+    uint256 private constant _PARTIAL_FILL = 0x01;
+    uint256 private constant _REQUIRES_EXTRA_ETH = 0x02;
+    uint256 private constant _SHOULD_CLAIM = 0x04;
+    uint256 private constant _BURN_FROM_MSG_SENDER = 0x08;
+    uint256 private constant _BURN_FROM_TX_ORIGIN = 0x10;
+
+    struct SwapDescription {
+        IERC20 srcToken;
+        IERC20 dstToken;
+        address srcReceiver;
+        address dstReceiver;
+        uint256 amount;
+        uint256 minReturnAmount;
+        uint256 flags;
+        bytes permit;
+    }
+
+    event Swapped(
+        address sender,
+        IERC20 srcToken,
+        IERC20 dstToken,
+        address dstReceiver,
+        uint256 spentAmount,
+        uint256 returnAmount
+    );
 
     modifier ensure(uint256 deadline) {
         require(deadline >= block.timestamp, 'Router: EXPIRED');
         _;
     }
-    constructor(address _factory, address _WETH) public {
+    constructor(address _factory, address _formula, address _WETH) public {
         factory = _factory;
-        formula = IFireBirdFactory(_factory).formula();
+        formula = _formula;
         WETH = _WETH;
     }
 
     receive() external payable {
         assert(msg.sender == WETH);
         // only accept ETH via fallback from the WETH contract
+    }
+
+    function setSwapFeeReward(address _swapFeeReward) public onlyOwner {
+        swapFeeReward = _swapFeeReward;
     }
 
     // **** ADD LIQUIDITY ****
@@ -139,6 +175,9 @@ contract FireBirdRouter is IFireBirdRouter {
             address token0 = pairV2.token0();
             uint amountOut = amounts[i + 1];
             (uint amount0Out, uint amount1Out, address output) = input == token0 ? (uint(0), amountOut, pairV2.token1()) : (amountOut, uint(0), token0);
+            if (swapFeeReward != address(0)) {
+                ISwapFeeReward(swapFeeReward).swap(msg.sender, input, output, amountOut, path[i]);
+            }
             address to = i < path.length - 1 ? path[i + 1] : _to;
             pairV2.swap(
                 amount0Out, amount1Out, to, new bytes(0)
@@ -154,10 +193,11 @@ contract FireBirdRouter is IFireBirdRouter {
         uint amountIn,
         uint amountOutMin,
         address[] memory path,
+        uint8[] memory dexIds,
         address to,
         uint deadline
     ) public virtual override ensure(deadline) returns (uint[] memory amounts) {
-        amounts = _validateAmountOut(tokenIn, tokenOut, amountIn, amountOutMin, path);
+        amounts = _validateAmountOut(tokenIn, tokenOut, amountIn, amountOutMin, path, dexIds);
 
         TransferHelper.safeTransferFrom(
             tokenIn, msg.sender, path[0], amounts[0]
@@ -171,10 +211,11 @@ contract FireBirdRouter is IFireBirdRouter {
         uint amountOut,
         uint amountInMax,
         address[] calldata path,
+        uint8[] calldata dexIds,
         address to,
         uint deadline
     ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
-        amounts = _validateAmountIn(tokenIn, tokenOut, amountOut, amountInMax, path);
+        amounts = _validateAmountIn(tokenIn, tokenOut, amountOut, amountInMax, path, dexIds);
 
         TransferHelper.safeTransferFrom(
             tokenIn, msg.sender, path[0], amounts[0]
@@ -182,7 +223,7 @@ contract FireBirdRouter is IFireBirdRouter {
         _swap(tokenIn, amounts, path, to);
     }
 
-    function swapExactETHForTokens(address tokenOut, uint amountOutMin, address[] calldata path, address to, uint deadline)
+    function swapExactETHForTokens(address tokenOut, uint amountOutMin, address[] calldata path, uint8[] calldata dexIds, address to, uint deadline)
         external
         virtual
         override
@@ -190,19 +231,19 @@ contract FireBirdRouter is IFireBirdRouter {
         ensure(deadline)
         returns (uint[] memory amounts)
     {
-        amounts = _validateAmountOut(WETH, tokenOut, msg.value, amountOutMin, path);
+        amounts = _validateAmountOut(WETH, tokenOut, msg.value, amountOutMin, path, dexIds);
 
         transferETHTo(amounts[0], path[0]);
         _swap(WETH, amounts, path, to);
     }
-    function swapTokensForExactETH(address tokenIn, uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
+    function swapTokensForExactETH(address tokenIn, uint amountOut, uint amountInMax, address[] calldata path, uint8[] calldata dexIds, address to, uint deadline)
         external
         virtual
         override
         ensure(deadline)
         returns (uint[] memory amounts)
     {
-        amounts = _validateAmountIn(tokenIn, WETH, amountOut, amountInMax, path);
+        amounts = _validateAmountIn(tokenIn, WETH, amountOut, amountInMax, path, dexIds);
 
         TransferHelper.safeTransferFrom(
             tokenIn, msg.sender, path[0], amounts[0]
@@ -210,14 +251,14 @@ contract FireBirdRouter is IFireBirdRouter {
         _swap(tokenIn, amounts, path, address(this));
         transferAll(ETH_ADDRESS, to, amounts[amounts.length - 1]);
     }
-    function swapExactTokensForETH(address tokenIn, uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
+    function swapExactTokensForETH(address tokenIn, uint amountIn, uint amountOutMin, address[] calldata path, uint8[] calldata dexIds, address to, uint deadline)
         external
         virtual
         override
         ensure(deadline)
         returns (uint[] memory amounts)
     {
-        amounts = _validateAmountOut(tokenIn, WETH, amountIn, amountOutMin, path);
+        amounts = _validateAmountOut(tokenIn, WETH, amountIn, amountOutMin, path, dexIds);
 
         TransferHelper.safeTransferFrom(
             tokenIn, msg.sender, path[0], amounts[0]
@@ -225,7 +266,7 @@ contract FireBirdRouter is IFireBirdRouter {
         _swap(tokenIn, amounts, path, address(this));
         transferAll(ETH_ADDRESS, to, amounts[amounts.length - 1]);
     }
-    function swapETHForExactTokens(address tokenOut, uint amountOut, address[] calldata path, address to, uint deadline)
+    function swapETHForExactTokens(address tokenOut, uint amountOut, address[] calldata path, uint8[] calldata dexIds, address to, uint deadline)
         external
         virtual
         override
@@ -233,7 +274,7 @@ contract FireBirdRouter is IFireBirdRouter {
         ensure(deadline)
         returns (uint[] memory amounts)
     {
-        amounts = _validateAmountIn(WETH, tokenOut, amountOut, msg.value, path);
+        amounts = _validateAmountIn(WETH, tokenOut, amountOut, msg.value, path, dexIds);
 
         transferETHTo(amounts[0], path[0]);
         _swap(WETH, amounts, path, to);
@@ -243,25 +284,26 @@ contract FireBirdRouter is IFireBirdRouter {
 
     // **** SWAP (supporting fee-on-transfer tokens) ****
     // requires the initial amount to have already been sent to the first pair
-    function _swapSupportingFeeOnTransferTokens(address tokenIn, address[] memory path, address _to) internal virtual {
-        address input = tokenIn;
+    function _swapSupportingFeeOnTransferTokens(address tokenIn, address[] memory path, uint8[] memory dexIds, address _to) internal virtual {
         for (uint i; i < path.length; i++) {
-            IFireBirdPair pair = IFireBirdPair(path[i]);
-
-            uint amountInput;
             uint amountOutput;
             address currentOutput;
             {
-                (address output, uint reserveInput, uint reserveOutput, uint32 tokenWeightInput, uint32 tokenWeightOutput, uint32 swapFee) = IFireBirdFormula(formula).getFactoryReserveAndWeights(factory, address(pair), input);
-                amountInput = IERC20(input).balanceOf(address(pair)).sub(reserveInput);
-                amountOutput = IFireBirdFormula(formula).getAmountOut(amountInput, reserveInput, reserveOutput, tokenWeightInput, tokenWeightOutput, swapFee);
+                (address output, uint reserveInput, uint reserveOutput, uint32 tokenWeightInput,, uint32 swapFee) = IFireBirdFormula(formula).getFactoryReserveAndWeights(factory, path[i], tokenIn, dexIds[i]);
+                uint amountInput = IERC20(tokenIn).balanceOf(path[i]).sub(reserveInput);
+                amountOutput = IFireBirdFormula(formula).getAmountOut(amountInput, reserveInput, reserveOutput, tokenWeightInput, 100-tokenWeightInput, swapFee);
                 currentOutput = output;
             }
-            (uint amount0Out, uint amount1Out) = input == pair.token0() ? (uint(0), amountOutput) : (amountOutput, uint(0));
+
+            IFireBirdPair pair = IFireBirdPair(path[i]);
+            (uint amount0Out, uint amount1Out) = tokenIn == pair.token0() ? (uint(0), amountOutput) : (amountOutput, uint(0));
+            if (swapFeeReward != address(0)) {
+                ISwapFeeReward(swapFeeReward).swap(msg.sender, tokenIn, currentOutput, amountOutput, path[i]);
+            }
             address to = i < path.length - 1 ? path[i + 1] : _to;
             pair.swap(amount0Out, amount1Out, to, new bytes(0));
-            emit Exchange(address(pair), amountOutput, currentOutput);
-            input = currentOutput;
+            emit Exchange(path[i], amountOutput, currentOutput);
+            tokenIn = currentOutput;
         }
     }
     function swapExactTokensForTokensSupportingFeeOnTransferTokens(
@@ -270,6 +312,7 @@ contract FireBirdRouter is IFireBirdRouter {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
+        uint8[] calldata dexIds,
         address to,
         uint deadline
     ) external virtual override ensure(deadline) {
@@ -277,7 +320,7 @@ contract FireBirdRouter is IFireBirdRouter {
             tokenIn, msg.sender, path[0], amountIn
         );
         uint balanceBefore = IERC20(tokenOut).balanceOf(to);
-        _swapSupportingFeeOnTransferTokens(tokenIn, path, to);
+        _swapSupportingFeeOnTransferTokens(tokenIn, path, dexIds, to);
         require(
             IERC20(tokenOut).balanceOf(to).sub(balanceBefore) >= amountOutMin,
             'Router: INSUFFICIENT_OUTPUT_AMOUNT'
@@ -287,6 +330,7 @@ contract FireBirdRouter is IFireBirdRouter {
         address tokenOut,
         uint amountOutMin,
         address[] calldata path,
+        uint8[] calldata dexIds,
         address to,
         uint deadline
     )
@@ -300,7 +344,7 @@ contract FireBirdRouter is IFireBirdRouter {
         uint amountIn = msg.value;
         transferETHTo(amountIn, path[0]);
         uint balanceBefore = IERC20(tokenOut).balanceOf(to);
-        _swapSupportingFeeOnTransferTokens(WETH, path, to);
+        _swapSupportingFeeOnTransferTokens(WETH, path, dexIds, to);
         require(
             IERC20(tokenOut).balanceOf(to).sub(balanceBefore) >= amountOutMin,
             'Router: INSUFFICIENT_OUTPUT_AMOUNT'
@@ -311,6 +355,7 @@ contract FireBirdRouter is IFireBirdRouter {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
+        uint8[] calldata dexIds,
         address to,
         uint deadline
     )
@@ -322,152 +367,80 @@ contract FireBirdRouter is IFireBirdRouter {
         TransferHelper.safeTransferFrom(
             tokenIn, msg.sender, path[0], amountIn
         );
-        _swapSupportingFeeOnTransferTokens(tokenIn, path, address(this));
+        _swapSupportingFeeOnTransferTokens(tokenIn, path, dexIds, address(this));
         uint amountOut = IERC20(WETH).balanceOf(address(this));
         require(amountOut >= amountOutMin, 'Router: INSUFFICIENT_OUTPUT_AMOUNT');
         transferAll(ETH_ADDRESS, to, amountOut);
     }
-    function multihopBatchSwapExactIn(
-        Swap[][] memory swapSequences,
-        address tokenIn,
-        address tokenOut,
-        uint totalAmountIn,
-        uint minTotalAmountOut,
-        uint deadline
-    ) public payable override virtual ensure(deadline) returns (uint totalAmountOut) {
-        transferFromAll(tokenIn, totalAmountIn);
-        uint balanceBefore;
-        if (!isETH(tokenOut)) {
-            balanceBefore = IERC20(tokenOut).balanceOf(msg.sender);
-        }
 
-        for (uint i = 0; i < swapSequences.length; i++) {
-            uint tokenAmountOut;
-            for (uint k = 0; k < swapSequences[i].length; k++) {
-                Swap memory swap = swapSequences[i][k];
-                if (k > 0) {
-                    // Makes sure that on the second swap the output of the first was used
-                    // so there is not intermediate token leftover
-                    swap.swapAmount = tokenAmountOut;
-                }
-                tokenAmountOut = _swapSingleSupportFeeOnTransferTokens(swap.tokenIn, swap.tokenOut, swap.pool, swap.swapAmount, swap.limitReturnAmount);
-            }
+    function swap(
+        IAggregationExecutor caller,
+        SwapDescription calldata desc,
+        bytes calldata data
+    )
+        external
+        payable
+        returns (uint256 returnAmount)
+    {
+        require(desc.minReturnAmount > 0, "Min return should not be 0");
+        require(data.length > 0, "data should be not zero");
 
-            // This takes the amountOut of the last swap
-            totalAmountOut = tokenAmountOut.add(totalAmountOut);
-        }
+        uint256 flags = desc.flags;
+        uint256 amount = desc.amount;
+        IERC20 srcToken = desc.srcToken;
+        IERC20 dstToken = desc.dstToken;
 
-        transferAll(tokenOut, msg.sender, totalAmountOut);
-        transferAll(tokenIn, msg.sender, getBalance(tokenIn));
-
-        if (isETH(tokenOut)) {
-            require(totalAmountOut >= minTotalAmountOut, "ERR_LIMIT_OUT");
+        if (flags & _REQUIRES_EXTRA_ETH != 0) {
+            require(msg.value > (isETH(srcToken) ? amount : 0), "Invalid msg.value");
         } else {
-            require(IERC20(tokenOut).balanceOf(msg.sender).sub(balanceBefore) >= minTotalAmountOut, '<minTotalAmountOut');
-        }
-    }
-
-    function multihopBatchSwapExactOut(
-        Swap[][] memory swapSequences,
-        address tokenIn,
-        address tokenOut,
-        uint maxTotalAmountIn,
-        uint deadline
-    ) public payable override virtual ensure(deadline) returns (uint totalAmountIn) {
-        transferFromAll(tokenIn, maxTotalAmountIn);
-
-        for (uint i = 0; i < swapSequences.length; i++) {
-            uint tokenAmountInFirstSwap;
-            // Specific code for a simple swap and a multihop (2 swaps in sequence)
-            if (swapSequences[i].length == 1) {
-                Swap memory swap = swapSequences[i][0];
-                tokenAmountInFirstSwap = _swapSingleMixOut(swap.tokenIn, swap.tokenOut, swap.pool, swap.swapAmount, swap.limitReturnAmount, swap.maxPrice);
-
-            } else {
-                // Consider we are swapping A -> B and B -> C. The goal is to buy a given amount
-                // of token C. But first we need to buy B with A so we can then buy C with B
-                // To get the exact amount of C we then first need to calculate how much B we'll need:
-                uint intermediateTokenAmount;
-                // This would be token B as described above
-                Swap memory secondSwap = swapSequences[i][1];
-                {
-                    address[] memory paths = new address[](1);
-                    paths[0] = secondSwap.pool;
-                    uint[] memory amounts = IFireBirdFormula(formula).getFactoryAmountsIn(factory, secondSwap.tokenIn, secondSwap.tokenOut, secondSwap.swapAmount, paths);
-                    intermediateTokenAmount = amounts[0];
-                    require(intermediateTokenAmount <= secondSwap.limitReturnAmount, 'Router: EXCESSIVE_INPUT_AMOUNT');
-                }
-
-                //// Buy intermediateTokenAmount of token B with A in the first pool
-                Swap memory firstSwap = swapSequences[i][0];
-                tokenAmountInFirstSwap = _swapSingleMixOut(firstSwap.tokenIn, firstSwap.tokenOut, firstSwap.pool, intermediateTokenAmount, firstSwap.limitReturnAmount, firstSwap.maxPrice);
-
-                //// Buy the final amount of token C desired
-                _swapSingle(secondSwap.tokenIn, secondSwap.pool, intermediateTokenAmount, secondSwap.swapAmount);
-            }
-
-            totalAmountIn = tokenAmountInFirstSwap.add(totalAmountIn);
+            require(msg.value == (isETH(srcToken) ? amount : 0), "Invalid msg.value");
         }
 
-        require(totalAmountIn <= maxTotalAmountIn, "ERR_LIMIT_IN");
-
-        transferAll(tokenOut, msg.sender, getBalance(tokenOut));
-        transferAll(tokenIn, msg.sender, getBalance(tokenIn));
-    }
-
-    function transferFromAll(address token, uint amount) internal returns (bool) {
-        if (isETH(token)) {
-            IWETH(WETH).deposit{value : msg.value}();
-        } else {
-            TransferHelper.safeTransferFrom(token, msg.sender, address(this), amount);
+        if (flags & _SHOULD_CLAIM != 0) {
+            require(!isETH(srcToken), "Claim token is ETH");
+            _permit(srcToken, amount, desc.permit);
+            TransferHelper.safeTransferFrom(address(srcToken), msg.sender, desc.srcReceiver, amount);
         }
-        return true;
-    }
 
-    function getBalance(address token) internal view returns (uint) {
-        if (isETH(token)) {
-            return IWETH(WETH).balanceOf(address(this));
-        } else {
-            return IERC20(token).balanceOf(address(this));
-        }
-    }
+        address dstReceiver = (desc.dstReceiver == address(0)) ? msg.sender : desc.dstReceiver;
+        uint256 initialSrcBalance = (flags & _PARTIAL_FILL != 0) ? getBalance(srcToken, msg.sender) : 0;
+        uint256 initialDstBalance = getBalance(dstToken, dstReceiver);
 
-    function _swapSingleMixOut(address tokenIn, address tokenOut, address pool, uint swapAmount, uint limitReturnAmount, uint maxPrice) internal returns (uint tokenAmountIn) {
-        address[] memory paths = new address[](1);
-        paths[0] = pool;
-        uint[] memory amounts = IFireBirdFormula(formula).getFactoryAmountsIn(factory, tokenIn, tokenOut, swapAmount, paths);
-        tokenAmountIn = amounts[0];
-        require(tokenAmountIn <= limitReturnAmount, 'Router: EXCESSIVE_INPUT_AMOUNT');
-        _swapSingle(tokenIn, pool, tokenAmountIn, amounts[1]);
-    }
-
-    function _swapSingle(address tokenIn, address pair, uint targetSwapAmount, uint targetOutAmount) internal {
-        TransferHelper.safeTransfer(tokenIn, pair, targetSwapAmount);
-        IFireBirdPair pairV2 = IFireBirdPair(pair);
-        address token0 = pairV2.token0();
-
-        (uint amount0Out, uint amount1Out, address output) = tokenIn == token0 ? (uint(0), targetOutAmount, pairV2.token1()) : (targetOutAmount, uint(0), token0);
-        pairV2.swap(amount0Out, amount1Out, address(this), new bytes(0));
-
-        emit Exchange(pair, targetOutAmount, output);
-    }
-
-    function _swapSingleSupportFeeOnTransferTokens(address tokenIn, address tokenOut, address pool, uint swapAmount, uint limitReturnAmount) internal returns(uint tokenAmountOut) {
-        TransferHelper.safeTransfer(tokenIn, pool, swapAmount);
-
-        uint amountOutput;
         {
-            (, uint reserveInput, uint reserveOutput, uint32 tokenWeightInput, uint32 tokenWeightOutput, uint32 swapFee) = IFireBirdFormula(formula).getFactoryReserveAndWeights(factory, pool, tokenIn);
-            uint amountInput = IERC20(tokenIn).balanceOf(pool).sub(reserveInput);
-            amountOutput = IFireBirdFormula(formula).getAmountOut(amountInput, reserveInput, reserveOutput, tokenWeightInput, tokenWeightOutput, swapFee);
+            // solhint-disable-next-line avoid-low-level-calls
+            (bool success, bytes memory result) = address(caller).call{value: msg.value}(abi.encodeWithSelector(caller.callBytes.selector, data, msg.sender));
+            if (!success) {
+                revert(RevertReasonParser.parse(result, "callBytes failed: "));
+            }
         }
-        uint balanceBefore = IERC20(tokenOut).balanceOf(address(this));
-        (uint amount0Out, uint amount1Out) = tokenIn == IFireBirdPair(pool).token0() ? (uint(0), amountOutput) : (amountOutput, uint(0));
-        IFireBirdPair(pool).swap(amount0Out, amount1Out, address(this), new bytes(0));
-        emit Exchange(pool, amountOutput, tokenOut);
 
-        tokenAmountOut = IERC20(tokenOut).balanceOf(address(this)).sub(balanceBefore);
-        require(tokenAmountOut >= limitReturnAmount,'Router: INSUFFICIENT_OUTPUT_AMOUNT');
+        uint256 spentAmount = amount;
+        returnAmount = getBalance(dstToken, dstReceiver).sub(initialDstBalance);
+
+        if (flags & _PARTIAL_FILL != 0) {
+            spentAmount = initialSrcBalance.add(amount).sub(getBalance(srcToken, msg.sender));
+            require(returnAmount.mul(amount) >= desc.minReturnAmount.mul(spentAmount), "Return amount is not enough");
+        } else {
+            require(returnAmount >= desc.minReturnAmount, "Return amount is not enough");
+        }
+
+        emit Swapped(
+            msg.sender,
+            srcToken,
+            dstToken,
+            dstReceiver,
+            spentAmount,
+            returnAmount
+        );
+        emit Exchange(address(caller), returnAmount, isETH(dstToken) ? WETH : address(dstToken));
+    }
+
+    function getBalance(IERC20 token, address account) internal view returns (uint) {
+        if (isETH(token)) {
+            return account.balance;
+        } else {
+            return token.balanceOf(account);
+        }
     }
 
     function _validateAmountOut(
@@ -475,9 +448,10 @@ contract FireBirdRouter is IFireBirdRouter {
         address tokenOut,
         uint amountIn,
         uint amountOutMin,
-        address[] memory path
+        address[] memory path,
+        uint8[] memory dexIds
     ) internal view returns (uint[] memory amounts) {
-        amounts = IFireBirdFormula(formula).getFactoryAmountsOut(factory, tokenIn, tokenOut, amountIn, path);
+        amounts = IFireBirdFormula(formula).getFactoryAmountsOut(factory, tokenIn, tokenOut, amountIn, path, dexIds);
         require(amounts[amounts.length - 1] >= amountOutMin, 'Router: INSUFFICIENT_OUTPUT_AMOUNT');
     }
 
@@ -486,9 +460,10 @@ contract FireBirdRouter is IFireBirdRouter {
         address tokenOut,
         uint amountOut,
         uint amountInMax,
-        address[] calldata path
+        address[] calldata path,
+        uint8[] calldata dexIds
     ) internal view returns (uint[] memory amounts) {
-        amounts = IFireBirdFormula(formula).getFactoryAmountsIn(factory, tokenIn, tokenOut, amountOut, path);
+        amounts = IFireBirdFormula(formula).getFactoryAmountsIn(factory, tokenIn, tokenOut, amountOut, path, dexIds);
         require(amounts[0] <= amountInMax, 'Router: EXCESSIVE_INPUT_AMOUNT');
     }
 
@@ -502,7 +477,7 @@ contract FireBirdRouter is IFireBirdRouter {
             return true;
         }
 
-        if (isETH(token)) {
+        if (isETH(IERC20(token))) {
             IWETH(WETH).withdraw(amount);
             TransferHelper.safeTransferETH(to, amount);
         } else {
@@ -511,8 +486,8 @@ contract FireBirdRouter is IFireBirdRouter {
         return true;
     }
 
-    function isETH(address token) internal pure returns (bool) {
-        return (token == ETH_ADDRESS);
+    function isETH(IERC20 token) internal pure returns (bool) {
+        return (address(token) == ETH_ADDRESS);
     }
 // **** REMOVE LIQUIDITY ****
     function _removeLiquidity(
@@ -640,5 +615,13 @@ contract FireBirdRouter is IFireBirdRouter {
         amountETH = removeLiquidityETHSupportingFeeOnTransferTokens(
             pair, token, liquidity, amountTokenMin, amountETHMin, to, deadline
         );
+    }
+
+    function rescueFunds(address token, uint256 amount) external onlyOwner {
+        if (isETH(IERC20(token))) {
+            TransferHelper.safeTransferETH(msg.sender, amount);
+        } else {
+            TransferHelper.safeTransfer(token, msg.sender, amount);
+        }
     }
 }
