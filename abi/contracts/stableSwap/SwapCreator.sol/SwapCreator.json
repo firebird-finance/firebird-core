@@ -1,0 +1,61 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "contract IERC20[]",
+        "name": "_pooledTokens",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint8[]",
+        "name": "decimals",
+        "type": "uint8[]"
+      },
+      {
+        "internalType": "string",
+        "name": "lpTokenName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "lpTokenSymbol",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_a",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_fee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_adminFee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_withdrawFee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "timeLock",
+        "type": "address"
+      }
+    ],
+    "name": "create",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

@@ -26,12 +26,14 @@ const config: HardhatUserConfig = {
             bsctestnet: '0xae13d989dac2f0debff460ac112a837c89baa7cd',
             bsc: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
             matic: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
+            iotex: '0xa00744882684c3e4747faefd68d283ea44099d03',
         },
         governance: {
             hardhat: 1,
             local: 1,
             bsc: '0xA20CA7c6705fB88847Cbf50549D7A38f4e99d32c',
             matic: '0xA20CA7c6705fB88847Cbf50549D7A38f4e99d32c',
+            iotex: '0xA20CA7c6705fB88847Cbf50549D7A38f4e99d32c',
             bsctestnet: 1,
         },
         proxyAdmin: {
@@ -39,6 +41,7 @@ const config: HardhatUserConfig = {
             local: 2,
             bsc: '0x6C844B76d8984a7703Ac4AA211a6507E088D8169',
             matic: '0x6C844B76d8984a7703Ac4AA211a6507E088D8169',
+            iotex: '0x6C844B76d8984a7703Ac4AA211a6507E088D8169',
             bsctestnet: 2,
         },
         uniRouter: {
@@ -147,6 +150,14 @@ const config: HardhatUserConfig = {
             accounts,
             loggingEnabled: true,
             url: `https://rpc-mainnet.maticvigil.com/`,
+        },
+        iotex: {
+            tags: ['production'],
+            live: true,
+            saveDeployments: true,
+            accounts,
+            loggingEnabled: true,
+            url: `https://babel-api.mainnet.iotex.io/`,
         },
         ganache: {
             tags: ['local'],

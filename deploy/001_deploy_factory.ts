@@ -35,20 +35,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 	});
 
 
-	const router = await deploy("FireBirdRouter", {
-		contract: "FireBirdRouter",
-		skipIfAlreadyDeployed: true,
-		from: deployer,
-		args: [factoty.address, wethAddress],
-		log: true,
-	});
-	const zapper = await deploy("FireBirdZap", {
-		contract: "FireBirdZap",
-		skipIfAlreadyDeployed: true,
-		from: deployer,
-		args: [uniRouter, router.address],
-		log: true,
-	});
+	// const router = await deploy("FireBirdRouter", {
+	// 	contract: "FireBirdRouter",
+	// 	skipIfAlreadyDeployed: true,
+	// 	from: deployer,
+	// 	args: [factoty.address, wethAddress],
+	// 	log: true,
+	// });
+	// const zapper = await deploy("FireBirdZap", {
+	// 	contract: "FireBirdZap",
+	// 	skipIfAlreadyDeployed: true,
+	// 	from: deployer,
+	// 	args: [uniRouter, router.address],
+	// 	log: true,
+	// });
 
 	if (factoty.newlyDeployed || protocolFeeRemover.newlyDeployed) {
 		await execute("FireBirdFactory", {from: deployer, log: true}, "setFeeTo", protocolFeeRemover.address);
@@ -57,10 +57,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 	if (factoty.newlyDeployed) {
 		await execute("FireBirdFactory", {from: deployer, log: true}, "setProtocolFee", BigNumber.from(20000));
 	}
-	await execute("FireBirdFactory", {from: deployer, log: true}, "setFeeToSetter", governance);
-	await execute("ProtocolFeeRemover", {from: deployer, log: true}, "setReceiver", governance);
-	await execute("ProtocolFeeRemover", {from: deployer, log: true}, "setGovernance", governance);
-	await execute("FireBirdZap", {from: deployer, log: true}, "setGovernance", governance);
+	// await execute("FireBirdFactory", {from: deployer, log: true}, "setFeeToSetter", governance);
+	// await execute("ProtocolFeeRemover", {from: deployer, log: true}, "setReceiver", governance);
+	// await execute("ProtocolFeeRemover", {from: deployer, log: true}, "setGovernance", governance);
+	// await execute("FireBirdZap", {from: deployer, log: true}, "setGovernance", governance);
 
 
 };
