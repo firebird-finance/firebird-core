@@ -8,6 +8,10 @@ import "./libraries/SafeMath.sol";
 contract FireBirdFormula is IFireBirdFormula {
     using SafeMath for uint256;
 
+    address public dexConfigor;
+    mapping(uint8 => uint32) public dexSwapFee; //dex0: firebird
+    mapping(uint8 => bool) public dexSupported;
+
     uint256 private constant ONE = 1;
     uint8 private constant MIN_PRECISION = 32;
     uint8 private constant MAX_PRECISION = 127;
@@ -30,6 +34,8 @@ contract FireBirdFormula is IFireBirdFormula {
     uint256 private constant MAX_UNF_WEIGHT = 0x10c6f7a0b5ed8d36b4c7f34938583621fafc8b0079a2834d26fa3fcc9ea9;
 
     uint256[128] private maxExpArray;
+
+    event LogDexSwapFee(uint8 dexId, uint32 swapFee, bool isSupported);
 
     function initMaxExpArray() internal {
         maxExpArray[32] = 0x1c35fedd14ffffffffffffffffffffffff;
@@ -129,7 +135,21 @@ contract FireBirdFormula is IFireBirdFormula {
         maxExpArray[126] = 0x008b380f3558668c46c91c49a2f8e967b9;
         maxExpArray[127] = 0x00857ddf0117efa215952912839f6473e6;
     }
-    constructor () public {
+
+    modifier onlyDexConfigor() {
+        require(msg.sender == dexConfigor, "FBF: !dex configor");
+        _;
+    }
+
+    constructor (address _dexConfigor) public {
+        dexConfigor = _dexConfigor;
+        dexSupported[uint8(0)] = true;
+        _setDexSwapFee(1, 30);
+        _setDexSwapFee(2, 25);
+        _setDexSwapFee(3, 20);
+        _setDexSwapFee(4, 15);
+        _setDexSwapFee(5, 10);
+        _setDexSwapFee(6, 5);
         initMaxExpArray();
     }
     /**
@@ -181,6 +201,7 @@ contract FireBirdFormula is IFireBirdFormula {
      * This functions assumes that "x >= FIXED_1", because the output would be negative otherwise.
      */
     function generalLog(uint256 x) internal pure returns (uint256) {
+        require(x >= FIXED_1, "not support x < FIXED_1");
         uint256 res = 0;
 
         // If x >= 2, then we compute the integer part of log2(x), which is larger than 0.
@@ -557,28 +578,27 @@ contract FireBirdFormula is IFireBirdFormula {
         return res;
     }
 
-    function getReserveAndWeights(address pair, address tokenA) public override view returns (
-        address tokenB,
-        uint reserveA,
-        uint reserveB,
-        uint32 tokenWeightA,
-        uint32 tokenWeightB,
-        uint32 swapFee
-    ) {
-        address token0 = IFireBirdPair(pair).token0();
-        (uint reserve0, uint reserve1,) = IFireBirdPair(pair).getReserves();
-        uint32 tokenWeight0;
-        uint32 tokenWeight1;
-        (tokenWeight0, tokenWeight1, swapFee) = getWeightsAndSwapFee(pair);
-
-        if (tokenA == token0) {
-            (tokenB, reserveA, reserveB, tokenWeightA, tokenWeightB) = (IFireBirdPair(pair).token1(), reserve0, reserve1, tokenWeight0, tokenWeight1);
-        } else {
-            (tokenB, reserveA, reserveB, tokenWeightA, tokenWeightB) = (token0, reserve1, reserve0, tokenWeight1, tokenWeight0);
-        }
+    function setDexConfigor(address _dexConfigor) external onlyDexConfigor {
+        dexConfigor = _dexConfigor;
     }
 
-    function getFactoryReserveAndWeights(address factory, address pair, address tokenA) public override view returns (
+    function setDexSwapFee(uint8 _dexId, uint32 _swapFee) external onlyDexConfigor {
+        _setDexSwapFee(_dexId, _swapFee);
+    }
+
+    function _setDexSwapFee(uint8 _dexId, uint32 _swapFee) internal {
+        require(_swapFee < 10000, 'FBP: Invalid swap fee');
+        dexSwapFee[_dexId] = _swapFee;
+        dexSupported[_dexId] = true;
+        emit LogDexSwapFee(_dexId, _swapFee, true);
+    }
+
+    function disableDex(uint8 _dexId) external onlyDexConfigor {
+        dexSupported[_dexId] = false;
+        emit LogDexSwapFee(_dexId, dexSwapFee[_dexId], false);
+    }
+
+    function getFactoryReserveAndWeights(address factory, address pair, address tokenA, uint8 dexId) public override view returns (
         address tokenB,
         uint reserveA,
         uint reserveB,
@@ -586,23 +606,24 @@ contract FireBirdFormula is IFireBirdFormula {
         uint32 tokenWeightB,
         uint32 swapFee
     ) {
-        address token0 = IFireBirdPair(pair).token0();
         (uint reserve0, uint reserve1,) = IFireBirdPair(pair).getReserves();
         uint32 tokenWeight0;
         uint32 tokenWeight1;
-        (tokenWeight0, tokenWeight1, swapFee) = getFactoryWeightsAndSwapFee(factory, pair);
+        (tokenWeight0, tokenWeight1, swapFee) = getFactoryWeightsAndSwapFee(factory, pair, dexId);
 
-        if (tokenA == token0) {
+        if (tokenA == IFireBirdPair(pair).token0()) {
             (tokenB, reserveA, reserveB, tokenWeightA, tokenWeightB) = (IFireBirdPair(pair).token1(), reserve0, reserve1, tokenWeight0, tokenWeight1);
+        } else if (tokenA == IFireBirdPair(pair).token1()) {
+            (tokenB, reserveA, reserveB, tokenWeightA, tokenWeightB) = (IFireBirdPair(pair).token0(), reserve1, reserve0, tokenWeight1, tokenWeight0);
         } else {
-            (tokenB, reserveA, reserveB, tokenWeightA, tokenWeightB) = (token0, reserve1, reserve0, tokenWeight1, tokenWeight0);
+            revert("FireBirdFormula: Invalid tokenA");
         }
     }
     /**
          * @dev given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset,
          *
          * Formula:
-         * return = reserveOut * (1 - (reserveIn / (reserveIn + amountIn * (10000 - swapFee))) ^ (tokenWeightIn / tokenWeightOut))
+         * return = reserveOut * (1 - (reserveIn * 10000 / (reserveIn * 10000 + amountIn * (10000 - swapFee))) ^ (tokenWeightIn / tokenWeightOut))
          *
          * @param amountIn                  source reserve amount
          * @param reserveIn    source reserve balance
@@ -679,46 +700,26 @@ contract FireBirdFormula is IFireBirdFormula {
         return (((temp1 - temp2) >> precision) / (10000 - swapFee)).add(1);
     }
 
-    // performs chained getAmountOut calculations on any number of pairs
-    function getAmountsOut(address tokenIn, address tokenOut, uint amountIn, address[] calldata path) external override view returns (uint[] memory amounts) {
+    function getFactoryAmountsOut(address factory, address tokenIn, address tokenOut, uint amountIn, address[] memory path, uint8[] memory dexIds) external override view returns (uint[] memory amounts) {
         require(path.length > 0, 'FireBirdFormula: INVALID_PATH');
         amounts = new uint[](path.length + 1);
         amounts[0] = amountIn;
         address currentTokenIn = tokenIn;
         for (uint i = 0; i < path.length; i++) {
-            (address currentTokenOut, uint reserveIn, uint reserveOut, uint32 tokenWeightIn, uint32 tokenWeightOut, uint32 swapFee) = getReserveAndWeights(path[i], currentTokenIn);
+            (address currentTokenOut, uint reserveIn, uint reserveOut, uint32 tokenWeightIn, uint32 tokenWeightOut, uint32 swapFee) = getFactoryReserveAndWeights(factory, path[i], currentTokenIn, dexIds[i]);
             amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut, tokenWeightIn, tokenWeightOut, swapFee);
             currentTokenIn = currentTokenOut;
         }
         require(currentTokenIn == tokenOut, 'FireBirdFormula: INVALID_TOKEN_OUT_PATH');
     }
 
-    function getFactoryAmountsOut(address factory, address tokenIn, address tokenOut, uint amountIn, address[] calldata path) external override view returns (uint[] memory amounts) {
-        require(path.length > 0, 'FireBirdFormula: INVALID_PATH');
-        amounts = new uint[](path.length + 1);
-        amounts[0] = amountIn;
-        address currentTokenIn = tokenIn;
-        for (uint i = 0; i < path.length; i++) {
-            (address currentTokenOut, uint reserveIn, uint reserveOut, uint32 tokenWeightIn, uint32 tokenWeightOut, uint32 swapFee) = getFactoryReserveAndWeights(factory, path[i], currentTokenIn);
-            amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut, tokenWeightIn, tokenWeightOut, swapFee);
-            currentTokenIn = currentTokenOut;
-        }
-        require(currentTokenIn == tokenOut, 'FireBirdFormula: INVALID_TOKEN_OUT_PATH');
-    }
-
-    function getPairAmountOut(address pair, address tokenIn, uint amountIn) external override view returns (uint amountOut) {
-        (address currentTokenOut, uint reserveIn, uint reserveOut, uint32 tokenWeightIn, uint32 tokenWeightOut, uint32 swapFee) = getReserveAndWeights(pair, tokenIn);
-        amountOut = getAmountOut(amountIn, reserveIn, reserveOut, tokenWeightIn, tokenWeightOut, swapFee);
-    }
-
-    // performs chained getAmountIn calculations on any number of pairs
-    function getAmountsIn(address tokenIn, address tokenOut, uint amountOut, address[] calldata path) external override view returns (uint[] memory amounts) {
+    function getFactoryAmountsIn(address factory, address tokenIn, address tokenOut, uint amountOut, address[] memory path, uint8[] memory dexIds) external override view returns (uint[] memory amounts) {
         require(path.length > 0, 'FireBirdFormula: INVALID_PATH');
         amounts = new uint[](path.length + 1);
         amounts[amounts.length - 1] = amountOut;
         address currentTokenIn = tokenOut;
         for (uint i = path.length; i > 0; i--) {
-            (address currentTokenOut, uint reserveIn, uint reserveOut, uint32 tokenWeightIn, uint32 tokenWeightOut, uint32 swapFee) = getReserveAndWeights(path[i - 1], currentTokenIn);
+            (address currentTokenOut, uint reserveIn, uint reserveOut, uint32 tokenWeightIn, uint32 tokenWeightOut, uint32 swapFee) = getFactoryReserveAndWeights(factory, path[i - 1], currentTokenIn, dexIds[i - 1]);
             amounts[i - 1] = getAmountIn(amounts[i], reserveOut, reserveIn, tokenWeightOut, tokenWeightIn, swapFee);
             currentTokenIn = currentTokenOut;
 
@@ -726,37 +727,16 @@ contract FireBirdFormula is IFireBirdFormula {
         require(currentTokenIn == tokenIn, 'FireBirdFormula: INVALID_TOKEN_IN_PATH');
     }
 
-    function getFactoryAmountsIn(address factory, address tokenIn, address tokenOut, uint amountOut, address[] calldata path) external override view returns (uint[] memory amounts) {
-        require(path.length > 0, 'FireBirdFormula: INVALID_PATH');
-        amounts = new uint[](path.length + 1);
-        amounts[amounts.length - 1] = amountOut;
-        address currentTokenIn = tokenOut;
-        for (uint i = path.length; i > 0; i--) {
-            (address currentTokenOut, uint reserveIn, uint reserveOut, uint32 tokenWeightIn, uint32 tokenWeightOut, uint32 swapFee) = getFactoryReserveAndWeights(factory, path[i - 1], currentTokenIn);
-            amounts[i - 1] = getAmountIn(amounts[i], reserveOut, reserveIn, tokenWeightOut, tokenWeightIn, swapFee);
-            currentTokenIn = currentTokenOut;
-
+    function getFactoryWeightsAndSwapFee(address factory, address pair, uint8 dexId) public override view returns (uint32 tokenWeight0, uint32 tokenWeight1, uint32 swapFee) {
+        if (dexId == 0) {
+            return IFireBirdFactory(factory).getWeightsAndSwapFee(pair);
+        } else {
+            if (dexSupported[dexId]) {
+                return (50, 50, dexSwapFee[dexId]);
+            } else {
+                revert("FBF: Dex not supported");
+            }
         }
-        require(currentTokenIn == tokenIn, 'FireBirdFormula: INVALID_TOKEN_IN_PATH');
-    }
-
-    function getPairAmountIn(address pair, address tokenIn, uint amountOut) external override view returns (uint amountIn) {
-        (address currentTokenOut, uint reserveIn, uint reserveOut, uint32 tokenWeightIn, uint32 tokenWeightOut, uint32 swapFee) = getReserveAndWeights(pair, tokenIn);
-        amountIn = getAmountIn(amountOut, reserveOut, reserveIn, tokenWeightOut, tokenWeightIn, swapFee);
-    }
-
-    function getWeightsAndSwapFee(address pair) public view returns (uint32 tokenWeight0, uint32 tokenWeight1, uint32 swapFee) {
-        try IFireBirdPair(pair).getTokenWeights() returns (uint32 _tokenWeight0, uint32 _tokenWeight1) {
-            return (_tokenWeight0, _tokenWeight1, IFireBirdPair(pair).getSwapFee());
-        } catch Error(string memory reason) {
-            revert(reason);
-        } catch (bytes memory /*lowLevelData*/) {
-            return (50, 50, 25);
-        }
-    }
-
-    function getFactoryWeightsAndSwapFee(address factory, address pair) public view returns (uint32 tokenWeight0, uint32 tokenWeight1, uint32 swapFee) {
-        return IFireBirdFactory(factory).getWeightsAndSwapFee(pair);
     }
 
     // Ensure constant value reserve0^(tokenWeight0/50) * reserve1^((100 - tokenWeight0)/50) <= balance0Adjusted^(tokenWeight0/50) * balance1Adjusted^((100 - tokenWeight0)/50)
@@ -799,14 +779,16 @@ contract FireBirdFormula is IFireBirdFormula {
     }
 
     function getReserves(address pair, address tokenA, address tokenB) external view override returns (uint reserveA, uint reserveB) {
-        (address token0,) = sortTokens(tokenA, tokenB);
+        (address token0, address token1) = sortTokens(tokenA, tokenB);
         (uint reserve0, uint reserve1,) = IFireBirdPair(pair).getReserves();
+        require(token0 == IFireBirdPair(pair).token0() && token1 == IFireBirdPair(pair).token1(), 'FireBirdFormula: Invalid token');
         (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
     }
 
     function getOtherToken(address pair, address tokenA) external view override returns (address tokenB) {
         address token0 = IFireBirdPair(pair).token0();
         address token1 = IFireBirdPair(pair).token1();
+        require(token0 == tokenA || token1 == tokenA, 'FireBirdFormula: Invalid tokenA');
         tokenB = token0 == tokenA ? token1 : token0;
     }
     // given some amount of an asset and pair reserves, returns an equivalent amount of the other asset

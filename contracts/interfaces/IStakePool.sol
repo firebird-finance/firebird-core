@@ -5,7 +5,7 @@ pragma solidity 0.7.6;
 interface IStakePool {
     event Deposit(address indexed account, uint256 amount);
     event AddRewardPool(uint256 indexed poolId);
-    event UpdateRewardPool(uint256 indexed poolId, uint256 endRewardBlock, uint256 rewardPerBlock);
+    event UpdateRewardPool(uint256 indexed poolId, uint256 endRewardTime, uint256 rewardPerSecond);
     event PayRewardPool(uint256 indexed poolId, address indexed rewardToken, address indexed account, uint256 pendingReward, uint256 rebaseAmount, uint256 paidReward);
     event UpdateRewardRebaser(uint256 indexed poolId, address rewardRebaser);
     event UpdateRewardMultiplier(uint256 indexed poolId, address rewardMultiplier);
@@ -27,7 +27,7 @@ interface IStakePool {
     function pendingReward(uint8 _pid, address _account) external view returns (uint);
 
     function allowRecoverRewardToken(address _token) external view returns (bool);
-    function getRewardPerBlock(uint8 pid) external view returns (uint);
+    function getRewardPerSecond(uint8 pid) external view returns (uint);
     function rewardPoolInfoLength() external view returns (uint);
 
     function unfrozenStakeTime(address _account) external view returns (uint);
@@ -38,9 +38,9 @@ interface IStakePool {
 
     function updateReward(uint8 _pid) external;
 
-    function updateRewardPool(uint8 _pid, uint256 _endRewardBlock, uint256 _rewardPerBlock) external;
+    function updateRewardPool(uint8 _pid, uint256 _endRewardTime, uint256 _rewardPerSecond) external;
     function stopRewardPool(uint8 _pid) external;
-    function getRewardMultiplier(uint8 _pid, uint _from, uint _to, uint _rewardPerBlock) external view returns (uint);
+    function getRewardMultiplier(uint8 _pid, uint _from, uint _to, uint _rewardPerSecond) external view returns (uint);
 
     function getRewardRebase(uint8 _pid, address _rewardToken, uint _pendingReward) external view returns (uint);
 
@@ -54,11 +54,11 @@ interface IStakePool {
         address _rewardToken,
         address _rewardRebaser,
         address _rewardMultiplier,
-        uint256 _startBlock,
-        uint256 _endRewardBlock,
-        uint256 _rewardPerBlock,
+        uint256 _startTime,
+        uint256 _endRewardTime,
+        uint256 _rewardPerSecond,
         uint256 _lockRewardPercent,
-        uint256 _startVestingBlock,
-        uint256 _endVestingBlock
+        uint256 _startVestingTime,
+        uint256 _endVestingTime
     ) external;
 }

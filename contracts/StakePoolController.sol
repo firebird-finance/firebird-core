@@ -26,8 +26,8 @@ contract StakePoolController is IStakePoolController {
     mapping(address => bool) public _stakePoolVerifiers;
     mapping(uint => address) public stakePoolCreators;
     address[] public override allStakePools;
-    bool public enableWhitelistRewardRebaser = false;
-    bool public enableWhitelistRewardMultiplier = false;
+    bool public enableWhitelistRewardRebaser = true;
+    bool public enableWhitelistRewardMultiplier = true;
     bool private _initialized = false;
 
     mapping(address => bool) public allowEmergencyWithdrawStakePools;
